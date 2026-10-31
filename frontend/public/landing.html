@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BAYLab AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="BAYLab AI membantu formulator menyaring parfum untuk disinfektan H₂O₂ sebelum uji laboratorium.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one fixed 3D stage behind the page; chapters scroll over it, and the molecule's reaction is tied to scroll position. */
+:root{
+  color-scheme:dark;
+  --ultra:#2a1c90;      /* brand indigo from the app's login panel */
+  --ultra-deep:#1a1064;
+  --ultra-lift:#3a29bd;
+  --mist:#f3f0ff;
+  --mist-dim:#c5bdf2;
+  --oxygen:#ff5a45;     /* SMARTS red */
+  --citrus:#ffc23d;     /* the aroma itself */
+  --ink:#170e5c;
+  --line:#ffffff2e;
+  --panel:#1a106499;
+  --display:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;
+  --body:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --gutter:clamp(16px,4vw,56px);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:auto}
+body{background:var(--ultra);color:var(--mist);font:400 17px/1.6 var(--body);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ultra)}
+a{color:inherit}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:3px solid var(--citrus);outline-offset:3px;border-radius:4px}
+.wrap{padding-left:max(var(--gutter),env(safe-area-inset-left,0px));padding-right:max(var(--gutter),env(safe-area-inset-right,0px))}
+.mono{font-family:var(--mono);font-size:13px;letter-spacing:.02em}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--citrus)}
+sub{font-size:.62em;line-height:0}
+
+#bg{position:fixed;inset:0;z-index:-2;background:radial-gradient(90% 80% at 68% 40%,var(--ultra-lift),var(--ultra) 58%,var(--ultra-deep))}
+#bg-citrus{position:fixed;inset:0;z-index:-1;background:var(--citrus);clip-path:inset(100% 0 0 0)}
+#stage{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
+main,header,footer{position:relative;z-index:1}
+/* Fine paper grain over everything; a static tile keeps it cheap above the WebGL canvas. */
+#grain{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.26;mix-blend-mode:soft-light;background-size:240px 240px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.4' intercept='-.7'/%3E%3CfeFuncG type='linear' slope='2.4' intercept='-.7'/%3E%3CfeFuncB type='linear' slope='2.4' intercept='-.7'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E")}
+body:not(.motion) #stage{position:absolute;height:100svh}
+
+/* Header */
+.top{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:calc(18px + env(safe-area-inset-top,0px));padding-bottom:18px;transition:color .3s,transform .45s cubic-bezier(.2,.7,.2,1)}
+body.head-away .top{transform:translateY(-110%)}
+.brand{display:flex;align-items:center;gap:10px;font:700 20px/1 var(--display);letter-spacing:-.02em;text-decoration:none}
+.brand svg{width:26px;height:26px;fill:currentColor}
+.top nav{display:flex;align-items:center;gap:26px;font-size:14.5px;font-weight:500}
+.top nav a{text-decoration:none}
+.top nav a:not(.go):hover{text-decoration:underline;text-underline-offset:4px}
+.go{display:inline-flex;align-items:center;gap:10px;background:var(--mist);color:var(--ink);padding:11px 18px;border-radius:40px;font-weight:600;text-decoration:none;transition:background .2s,color .2s}
+.go:hover{background:var(--citrus)}
+body.on-citrus .top{color:var(--ink)}body.on-citrus .top .go{background:var(--ink);color:var(--mist)}
+@media(max-width:760px){.top nav a:not(.go){display:none}}
+
+/* Hero */
+.hero{min-height:min(100svh,940px);display:flex;flex-direction:column;justify-content:flex-end;gap:28px;padding-top:110px;padding-bottom:34px}
+.hero h1{font:800 clamp(3.1rem,8.9vw,10rem)/.92 var(--display);font-variation-settings:'wdth' 82;letter-spacing:-.035em;text-wrap:balance}
+.hero h1 .ln{display:block;overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em}
+.hero h1 .ln>span{display:block}
+.hero h1 em{font-style:normal;color:var(--citrus)}
+.hero-foot{display:grid;grid-template-columns:minmax(0,34rem) auto;justify-content:space-between;align-items:end;gap:24px}
+.hero-foot p{font-size:clamp(17px,1.4vw,20px);color:var(--mist);max-width:34rem}
+.cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:20px;align-items:center}
+.cta-row .go{padding:15px 24px;font-size:16px}
+.hint{color:var(--mist-dim);text-align:right}
+@media(max-width:760px){.hero-foot{grid-template-columns:minmax(0,1fr)}.hint{text-align:left}}
+
+/* The reaction chapters */
+.beat{min-height:100svh;display:flex;align-items:center;padding-block:12vh}
+.beat .say{max-width:33rem;min-width:0}
+.beat.right{justify-content:flex-end}
+.beat h2{font:700 clamp(2.3rem,5.2vw,5.4rem)/1 var(--display);font-variation-settings:'wdth' 85;letter-spacing:-.025em;margin:12px 0 16px;text-wrap:balance}
+.beat h2 .hot{color:var(--oxygen)}
+.smarts{display:inline-block;margin-top:16px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--panel);color:var(--mist)}
+.smarts b{color:var(--oxygen);font-weight:500}
+.losses{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none}
+.losses li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:baseline;border-top:1px solid var(--line);padding-top:10px}
+.losses span{font-family:var(--mono);font-size:13px;color:var(--citrus)}
+
+@media(min-width:900px){.beat .say{max-width:min(33rem,35vw)}}
+
+/* Horizontal modules */
+.modules{position:relative;padding-block:8vh}
+.modules-head{max-width:46rem;margin-bottom:34px}
+.modules-head h2{font:700 clamp(2.3rem,5.2vw,5.4rem)/1 var(--display);font-variation-settings:'wdth' 85;letter-spacing:-.025em;margin-top:12px;text-wrap:balance}
+.track{display:flex;flex-direction:column;gap:22px}
+.mod{width:100%;min-height:min(48vh,420px);background:var(--ultra-deep);border:1px solid var(--line);border-radius:6px;padding:clamp(20px,2.6vw,34px);display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);gap:clamp(18px,2.6vw,36px);align-items:center}
+.mod h3{font:700 clamp(1.7rem,2.9vw,2.8rem)/1.02 var(--display);font-variation-settings:'wdth' 88;letter-spacing:-.02em;margin:10px 0 12px}
+.mod p{color:var(--mist-dim);font-size:16px}
+.mod .step{color:var(--citrus);font-family:var(--mono);font-size:13px}
+.ui{background:#0f0a42;border:1px solid var(--line);border-radius:6px;padding:14px;font-size:13.5px;min-width:0}
+.ui table{width:100%;border-collapse:collapse}
+.ui th{font:500 12px var(--mono);color:var(--mist-dim);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line)}
+.ui td{padding:9px 6px;border-bottom:1px solid #ffffff14;vertical-align:middle}
+.ui tr:last-child td{border-bottom:0}
+.ui-note{margin-top:10px;font:400 12px/1.5 var(--mono);color:var(--mist-dim)}
+.tag{display:inline-block;font:500 12px/1 var(--mono);padding:5px 8px;border-radius:30px;white-space:nowrap}
+.tag.hi{background:#ff5a4530;color:#ffb2a8}.tag.mid{background:#ffc23d2b;color:var(--citrus)}.tag.lo{background:#3bd68a2b;color:#8cf0bd}.tag.warn{background:#6fa8ff2b;color:#b7d2ff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chips button{font:500 12.5px var(--body);color:var(--mist);background:transparent;border:1px solid var(--line);border-radius:30px;padding:7px 11px;cursor:pointer}
+.chips button:hover{border-color:var(--mist)}
+.chips button[aria-pressed=true]{background:var(--citrus);border-color:var(--citrus);color:var(--ink)}
+#hits{min-height:120px}
+.hit{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:9px 0;border-top:1px solid #ffffff14}
+.hit code{font:500 12px var(--mono);color:#ffb2a8;overflow-wrap:anywhere}
+.result-top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px}
+.rank{display:grid;grid-template-columns:44px minmax(0,1fr) 36px;gap:10px;align-items:center;padding:9px 0}
+.rank i{display:block;height:10px;background:#ffffff1a;border-radius:6px;overflow:hidden}
+.rank i b{display:block;height:100%;background:var(--citrus);border-radius:6px}
+.rank span{font:500 13px var(--mono);font-variant-numeric:tabular-nums}
+@media(min-width:900px){body.motion .track{flex-direction:row;width:max-content}body.motion .mod{width:min(74vw,860px)}}
+@media(max-width:899px){.mod{grid-template-columns:minmax(0,1fr);min-height:0}.beat,.beat.right{align-items:flex-end;justify-content:flex-start;padding-block:46svh 8vh}.beat .say{background:#1a1064d9;padding:16px;border-radius:6px}}
+
+/* App screens */
+.app{padding-block:14vh 10vh}
+.app h2{font:700 clamp(2.3rem,5.2vw,5.4rem)/1 var(--display);font-variation-settings:'wdth' 85;letter-spacing:-.025em;margin:12px 0 14px;max-width:18ch;text-wrap:balance}
+.app>p{max-width:38rem;color:var(--mist)}
+.deck{position:relative;margin-top:48px;height:clamp(300px,50vw,680px);perspective:1500px}
+.deck figure{position:absolute;margin:0;width:min(72%,980px);transform-style:preserve-3d;border-radius:8px;overflow:hidden;border:1px solid var(--line);box-shadow:0 40px 80px #0b063a80;background:#fff}
+.deck img{display:block;width:100%;height:auto}
+.deck figure:nth-child(1){left:0;top:0}.deck figure:nth-child(2){left:14%;top:9%}.deck figure:nth-child(3){left:28%;top:18%}
+.caption{margin-top:18px;color:var(--mist-dim)}
+
+/* Targets */
+.targets{padding-block:12vh}
+.targets h2{font:700 clamp(2.3rem,5.2vw,5.4rem)/1 var(--display);font-variation-settings:'wdth' 85;letter-spacing:-.025em;margin:12px 0 40px;max-width:16ch;text-wrap:balance}
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid var(--line)}
+.nums div{padding:22px 18px 22px 0;border-right:1px solid var(--line);min-width:0}
+.nums div+div{padding-left:18px}.nums div:last-child{border-right:0}
+.nums strong{display:block;font:700 clamp(2.2rem,4.8vw,5rem)/1 var(--display);font-variation-settings:'wdth' 80;letter-spacing:-.02em;color:var(--citrus);overflow-wrap:anywhere}
+.nums span{display:block;margin-top:10px;font-size:15px;color:var(--mist)}
+.fine{margin-top:20px;color:var(--mist-dim);max-width:44rem}
+@media(max-width:760px){.nums{grid-template-columns:repeat(2,minmax(0,1fr))}.nums div{border-bottom:1px solid var(--line)}.nums div:nth-child(2n){border-right:0}.nums div:nth-child(2n+1){padding-left:0}}
+
+/* Closing: the aroma arrives */
+.close{min-height:115svh;display:flex;align-items:flex-end;padding-block:30vh 10vh;color:var(--ink)}
+body:not(.motion) .close{background:var(--citrus)}
+.close h2{font:800 clamp(3.2rem,13vw,15rem)/.9 var(--display);font-variation-settings:'wdth' 82;letter-spacing:-.035em}
+.close p{max-width:30rem;margin-top:18px;font-size:18px;font-weight:500}
+.close .go{background:var(--ink);color:var(--mist);margin-top:22px;padding:16px 26px;font-size:17px}
+.close .go:hover{background:var(--ultra-lift)}
+footer{color:var(--ink);padding-block:0 26px;font-size:14px;display:flex;flex-wrap:wrap;gap:6px 26px;justify-content:space-between}
+body:not(.motion) footer{background:var(--citrus)}
+
+/* Instrument readout */
+.hud{position:fixed;left:0;bottom:0;z-index:4;padding-left:max(var(--gutter),env(safe-area-inset-left,0px));padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));display:none;font-family:var(--mono);font-size:12.5px;color:var(--mist);pointer-events:none;transition:opacity .3s}
+.hud b{font-weight:500;color:var(--citrus)}
+body.motion .hud{display:block}
+body.on-app .hud,body.on-citrus .hud,body.at-top .hud{opacity:0}
+@media(max-width:899px){body.motion .hud{display:none}}
+</style>
+
+</head><body><div id="bg"></div><div id="bg-citrus"></div>
+<canvas id="stage" aria-hidden="true"></canvas>
+<div id="grain" aria-hidden="true"></div>
+
+<header class="top wrap">
+  <a class="brand" href="#mulai" aria-label="BAYLab AI, ke awal halaman"><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="5.5" r="4.5"/><circle cx="13" cy="20.5" r="4.5"/><circle cx="5.5" cy="13" r="4.5"/><circle cx="20.5" cy="13" r="4.5"/></svg>BAYLab AI</a>
+  <nav aria-label="Navigasi utama"><a href="#masalah">Masalah</a><a href="#cara">Cara kerja</a><a href="#aplikasi">Aplikasi</a><a href="#target">Target</a><a class="go" href="baylab-figma.html">Coba demo</a></nav>
+</header>
+
+<main>
+  <section class="hero wrap" id="mulai">
+    <h1><span class="ln"><span>Sebelum masuk</span></span><span class="ln"><span>lab, tanya dulu</span></span><span class="ln"><span><em>molekulnya.</em></span></span></h1>
+    <div class="hero-foot">
+      <div>
+        <p>BAYLab AI membantu formulator memilih parfum untuk disinfektan H₂O₂ beraroma: bahan disaring dari strukturnya, bukti ditelusuri ke sumber, lalu kandidat diperingkat sebelum uji lab.</p>
+        <div class="cta-row"><a class="go" href="baylab-figma.html">Coba demo <span aria-hidden="true">→</span></a><a href="#masalah">Lihat masalahnya</a></div>
+      </div>
+      <p class="hint mono">Ini d-limonene, parfum citrus.<br>Gulir untuk melihat nasibnya ↓</p>
+    </div>
+  </section>
+
+  <section class="beat wrap" id="masalah">
+    <div class="say">
+      <p class="eyebrow">Masalah</p>
+      <h2>Aroma citrus punya titik <span class="hot">lemah</span>.</h2>
+      <p>Ikatan rangkap C=C di limonene kaya elektron. Di dalam basis oksidator, ikatan ini jadi sasaran pertama.</p>
+      <p class="smarts mono">R-01 <b>[CX3]=[CX3]</b></p>
+    </div>
+  </section>
+
+  <section class="beat wrap" id="serang">
+    <div class="say">
+      <p class="eyebrow">Reaksi</p>
+      <h2>H₂O₂ menyerang saat formula disimpan.</h2>
+      <p>Laju oksidasi bergantung pada pH, suhu, dan logam jejak. Formula yang tampak baik di hari pertama bisa berubah beberapa minggu kemudian.</p>
+    </div>
+  </section>
+
+  <section class="beat wrap" id="rugi">
+    <div class="say">
+      <p class="eyebrow">Akibat</p>
+      <h2>Satu oksigen, tiga kerugian.</h2>
+      <ul class="losses">
+        <li><span>aroma</span>Wangi memudar atau berubah, padahal aroma dipakai sebagai penanda ruangan sudah disemprot.</li>
+        <li><span>sediaan</span>Larutan bisa keruh dan tidak homogen.</li>
+        <li><span>H₂O₂</span>Kadar zat aktif ikut turun selama penyimpanan.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="modules" id="cara">
+    <div class="modules-head wrap">
+      <p class="eyebrow">Cara kerja</p>
+      <h2>Empat modul, satu alur dari bahan ke bukti lab.</h2>
+    </div>
+    <div class="track-clip">
+    <div class="track wrap">
+      <article class="mod">
+        <div><p class="step">Modul 1 dari 4</p><h3>Knowledge Screening</h3><p>Cocokkan struktur bahan dengan pola gugus rentan. Pilih parfum untuk melihat aturan yang terpicu.</p></div>
+        <div class="ui">
+          <div class="chips" id="chips" role="group" aria-label="Pilih bahan aroma"></div>
+          <div id="hits" aria-live="polite"></div>
+          <p class="ui-note">Data contoh ilustratif. Aturan berstatus draf sampai ditinjau ahli kimia.</p>
+        </div>
+      </article>
+      <article class="mod">
+        <div><p class="step">Modul 2 dari 4</p><h3>Formulation Analysis</h3><p>Rule engine menilai risiko oksidasi, kelarutan, stabilitas suhu, dan kompatibilitas antarkomponen.</p></div>
+        <div class="ui">
+          <table><thead><tr><th>Rule</th><th>Bahan</th><th>Risiko</th></tr></thead><tbody>
+            <tr><td class="mono">R-01</td><td>d-Limonene</td><td><span class="tag hi">Tinggi</span></td></tr>
+            <tr><td class="mono">R-07</td><td>d-Limonene</td><td><span class="tag mid">Sedang</span></td></tr>
+            <tr><td class="mono">R-04</td><td>Alcohol Ethoxylate</td><td><span class="tag mid">Sedang</span></td></tr>
+            <tr><td class="mono">R-08</td><td>Hydrogen Peroxide</td><td><span class="tag warn">Peringatan</span></td></tr>
+          </tbody></table>
+          <p class="ui-note">Data contoh ilustratif.</p>
+        </div>
+      </article>
+      <article class="mod">
+        <div><p class="step">Modul 3 dari 4</p><h3>Candidate Recommendation</h3><p>Kandidat diperingkat dari risiko, kesesuaian aroma, dan fasilitas lab, lengkap dengan usulan metode uji.</p></div>
+        <div class="ui">
+          <div class="rank"><span>F-01</span><i><b style="width:84%"></b></i><span>0.84</span></div>
+          <div class="rank"><span>F-02</span><i><b style="width:78%"></b></i><span>0.78</span></div>
+          <div class="rank"><span>F-03</span><i><b style="width:69%"></b></i><span>0.69</span></div>
+          <p class="ui-note">Skor contoh desain, belum dihitung model. Kandidat tetap ditinjau formulator dan ahli kimia.</p>
+        </div>
+      </article>
+      <article class="mod">
+        <div><p class="step">Modul 4 dari 4</p><h3>Experiment Tracking</h3><p>Hasil uji dicatat, termasuk yang gagal, supaya rekomendasi berikutnya belajar dari data lab yang nyata.</p></div>
+        <div class="ui">
+          <table><thead><tr><th>Tanggal</th><th>Kondisi</th><th>H₂O₂</th><th>pH</th></tr></thead><tbody>
+            <tr><td>10 Okt</td><td>Awal</td><td class="mono">3,00</td><td class="mono">3,6</td></tr>
+            <tr><td>12 Okt</td><td>40°C, 2 hari</td><td class="mono">2,97</td><td class="mono">3,6</td></tr>
+            <tr><td>15 Okt</td><td>40°C, 5 hari</td><td class="mono">2,91</td><td class="mono">3,7</td></tr>
+          </tbody></table>
+          <p class="ui-note">Contoh F-01, data ilustratif. Retensi 97,0%.</p>
+        </div>
+      </article>
+    </div>
+    </div>
+  </section>
+
+  <section class="app wrap" id="aplikasi">
+    <p class="eyebrow">Aplikasi</p>
+    <h2>Semua keputusan ada di satu ruang kerja.</h2>
+    <p>Tiga belas layar untuk tim R&amp;D, dari input formulasi sampai pembelajaran model. Setiap temuan menyertakan sumber dan status tinjauannya.</p>
+    <div class="deck">
+      <figure><img src="screens/dashboard.jpg" alt="Dashboard BAYLab AI dengan ringkasan kandidat, risiko, dan alur kerja" width="1120" height="700" loading="lazy"></figure>
+      <figure><img src="screens/screening.jpg" alt="Layar Hasil Screening dengan struktur molekul dan pola SMARTS" width="1120" height="700" loading="lazy"></figure>
+      <figure><img src="screens/rekomendasi.jpg" alt="Layar Rekomendasi Formulasi dengan kandidat F-01" width="1120" height="700" loading="lazy"></figure>
+    </div>
+    <p class="caption mono">Tangkapan layar prototipe. Semua data di dalamnya contoh ilustratif.</p>
+  </section>
+
+  <section class="targets wrap" id="target">
+    <p class="eyebrow">Target proposal</p>
+    <h2>Yang ingin kami capai bersama LKPI.</h2>
+    <div class="nums">
+      <div><strong>35%</strong><span>efisiensi biaya eksperimen</span></div>
+      <div><strong>Rp140 jt</strong><span>potensi penghematan per tahun</span></div>
+      <div><strong>12→8</strong><span>bulan waktu pengembangan</span></div>
+      <div><strong>TKT 5</strong><span>lewat uji coba bersama LKPI hingga April 2027, dari TKT 3</span></div>
+    </div>
+    <p class="fine">Angka di atas target yang masih harus dibuktikan, bukan hasil yang sudah tercapai. Rekomendasi BAYLab AI tetap perlu verifikasi laboratorium, dan efikasi antimikroba hanya bisa dibuktikan lewat uji lab.</p>
+  </section>
+
+  <section class="close wrap" id="coba">
+    <div>
+      <h2>Saring dulu, racik kemudian.</h2>
+      <p>Masuk dengan akun demo dan telusuri alurnya dari formulasi sampai evaluasi uji coba.</p>
+      <a class="go" href="baylab-figma.html">Coba demo <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+</main>
+<footer class="wrap">
+  <span>Prototipe BAYLab AI · Side Quest UTS · UMS Health Innovation Hackathon 2026</span>
+  <span>Tantangan LKPI-01 · PT Likuid Pharmalab Indonesia</span>
+</footer>
+
+<div class="hud" id="hud" aria-hidden="true">C=C <b id="hud-state">utuh</b> · pola R-01 <span id="hud-rule">belum dicek</span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+'use strict';
+/* Scene state: every animated value lives here so scroll and the render loop stay decoupled. */
+const S={x:4.5,y:.55,z:0,scale:.84,spin:1,face:0,hot:0,pulse:0,attack:0,epox:0,cam:17,morph:0,show:1,intro:1,gone:0};
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const narrow=()=>innerWidth<900;
+
+/* ---------- Mini screening demo (works without WebGL) ---------- */
+const PERFUMES=[
+  ['d-Limonene','5989-27-5','Tinggi',[['R-01','[CX3]=[CX3]','Ikatan rangkap C=C'],['R-07','[CX4;!H0][CX3]=[CX3]','C–H alilik']]],
+  ['Linalool','78-70-6','Tinggi',[['R-01','[CX3]=[CX3]','Ikatan rangkap C=C']]],
+  ['Vanillin','121-33-5','Tinggi',[['R-02','[CX3H1](=O)[#6]','Aldehida'],['R-03','c[OX2H]','Gugus fenol']]],
+  ['Ethylene brassylate','105-95-3','Rendah',[]],
+  ['2,6-Dimethyl-2-heptanol','13254-34-7','Rendah',[]],
+];
+const chips=document.getElementById('chips'),hits=document.getElementById('hits');
+function showPerfume(i){
+  const [name,cas,risk,rules]=PERFUMES[i];
+  chips.querySelectorAll('button').forEach((b,k)=>b.setAttribute('aria-pressed',k===i));
+  hits.innerHTML='<div class="result-top"><span>'+name+' <span class="mono" style="color:var(--mist-dim)">CAS '+cas+'</span></span><span class="tag '+(risk==='Tinggi'?'hi':'lo')+'">'+risk+'</span></div>'+
+    (rules.length?rules.map(r=>'<div class="hit"><span class="mono">'+r[0]+'</span><span>'+r[2]+'</span><span></span><code>'+r[1]+'</code></div>').join(''):'<div class="hit"><span class="mono">–</span><span>Tidak ada gugus rentan dari delapan pola yang dicek.</span></div>');
+  if(window.gsap&&!reduced&&rules.some(r=>r[0]==='R-01'))gsap.fromTo(S,{pulse:1},{pulse:0,duration:1.2,ease:'power2.out'});
+}
+PERFUMES.forEach((p,i)=>{const b=document.createElement('button');b.type='button';b.textContent=p[0];b.onclick=()=>showPerfume(i);chips.append(b)});
+showPerfume(0);
+
+/* ---------- 3D stage ---------- */
+let renderFrame=()=>{};
+function initStage(){
+  if(!window.THREE)return false;
+  const canvas=document.getElementById('stage');
+  let renderer;
+  try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'})}catch(e){return false}
+  const low=narrow();
+  renderer.setPixelRatio(Math.min(devicePixelRatio,low?1.5:1.8));
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.1;
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(32,1,.1,100);
+
+  /* Lab-window environment painted procedurally, so glossy atoms have something to reflect. */
+  const envScene=new THREE.Scene();
+  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(20,24,16),new THREE.MeshBasicMaterial({color:0x2a1c90,side:THREE.BackSide})));
+  const panel=(c,i,x,y,z,w,h)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({color:new THREE.Color(c).multiplyScalar(i),side:THREE.DoubleSide}));m.position.set(x,y,z);m.lookAt(0,0,0);envScene.add(m)};
+  panel(0xffffff,7,-6,8,6,9,7);panel(0x9f8cff,5,9,2,4,6,12);panel(0xffc23d,3,-9,-5,-2,7,7);panel(0xff5a45,2.2,6,-8,5,6,4);panel(0xffffff,4,3,10,-6,10,3);
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  scene.environment=pmrem.fromScene(envScene,.03).texture;
+
+  const key=new THREE.DirectionalLight(0xffffff,1.6);key.position.set(-4,6,8);scene.add(key);
+  const rim=new THREE.DirectionalLight(0xffc23d,1.5);rim.position.set(6,-3,-5);scene.add(rim);
+
+  const physical=o=>new THREE.MeshPhysicalMaterial({clearcoat:1,clearcoatRoughness:.15,...o});
+  const matC=physical({color:0x140c4e,roughness:.2,metalness:.15,iridescence:1,iridescenceIOR:1.7,iridescenceThicknessRange:[180,520]});
+  const matH=physical({color:0xf4f1ff,roughness:.28});
+  const matO=physical({color:0xff3f2c,roughness:.2,emissive:0x5a0c04,emissiveIntensity:.5});
+  const matBond=physical({color:0xcfc7ff,roughness:.3,metalness:.25});
+  const matHot=physical({color:0x140c4e,roughness:.2,metalness:.15,emissive:0xff3a22,emissiveIntensity:0});
+  const matHotBond=physical({color:0xcfc7ff,roughness:.3,metalness:.25,emissive:0xff3a22,emissiveIntensity:0});
+
+  const seg=low?24:40;
+  const gAtom=new THREE.SphereGeometry(1,seg,Math.round(seg*.7));
+  const gBond=new THREE.CylinderGeometry(1,1,1,16,1);
+  const mol=new THREE.Group();scene.add(mol);
+  const R={C:.46,H:.25,O:.5};
+
+  /* d-limonene heavy atoms: half-chair ring, methyl on C1, isopropenyl on C4 (coordinates in Å, approximate). */
+  const ring=[0,1,2,3,4,5].map(i=>{const a=i*Math.PI/3-Math.PI/6;return new THREE.Vector3(1.45*Math.cos(a),1.45*Math.sin(a),[0,0,.3,-.38,.38,-.3][i])});
+  const heavy=[...ring];
+  const dir=ring[0].clone().setZ(0).normalize();
+  const c4=ring[3],d4=c4.clone().setZ(0).normalize();
+  heavy.push(ring[0].clone().add(dir.clone().multiplyScalar(1.5)));                                   /* C7 methyl */
+  const c8=c4.clone().add(d4.clone().multiplyScalar(1.45)).add(new THREE.Vector3(0,0,-.5));heavy.push(c8);  /* C8 */
+  const side=new THREE.Vector3(-d4.y,d4.x,0);
+  heavy.push(c8.clone().add(side.clone().multiplyScalar(1.15)).add(d4.clone().multiplyScalar(.65)));   /* C9 =CH2 */
+  heavy.push(c8.clone().add(side.clone().multiplyScalar(-1.25)).add(d4.clone().multiplyScalar(.75)));  /* C10 methyl */
+  const links=[[0,1,2],[1,2,1],[2,3,1],[3,4,1],[4,5,1],[5,0,1],[0,6,1],[3,7,1],[7,8,2],[7,9,1]];
+  const hCount=[0,1,2,1,2,2,3,0,2,3];
+
+  const addAtom=(p,r,m)=>{const a=new THREE.Mesh(gAtom,m);a.position.copy(p);a.scale.setScalar(r);mol.add(a);return a};
+  const addBond=m=>{const b=new THREE.Mesh(gBond,m);mol.add(b);return b};
+  const up=new THREE.Vector3(0,1,0),tmp=new THREE.Vector3();
+  function place(b,p,q,r){tmp.subVectors(q,p);const l=tmp.length();b.position.copy(p).addScaledVector(tmp,.5);b.scale.set(r,l,r);b.quaternion.setFromUnitVectors(up,tmp.divideScalar(l||1))}
+
+  heavy.forEach((p,i)=>addAtom(p,R.C,i<2?matHot:matC));
+  let secondBond=null,mainBond=null;
+  links.forEach(([a,b,order])=>{
+    const p=heavy[a],q=heavy[b],hot=a===0&&b===1;
+    if(order===1){const m=addBond(matBond);place(m,p,q,.1);return}
+    const off=new THREE.Vector3().subVectors(q,p).cross(new THREE.Vector3(0,0,1)).normalize().multiplyScalar(.17);
+    const m1=addBond(hot?matHotBond:matBond),m2=addBond(hot?matHotBond:matBond);
+    place(m1,p.clone().add(off),q.clone().add(off),.085);place(m2,p.clone().sub(off),q.clone().sub(off),.085);
+    if(hot){mainBond=m1;secondBond=m2;m2.userData={p:p.clone().sub(off),q:q.clone().sub(off)}}
+  });
+  /* Hydrogens: placed opposite the heavy neighbours, fanned for CH2 and CH3. */
+  hCount.forEach((n,i)=>{
+    if(!n)return;
+    const p=heavy[i],nb=links.filter(l=>l[0]===i||l[1]===i).map(l=>heavy[l[0]===i?l[1]:l[0]]);
+    const out=new THREE.Vector3();nb.forEach(q=>out.add(tmp.subVectors(p,q).normalize()));
+    if(out.lengthSq()<.01)out.set(0,0,1);out.normalize();
+    const u=new THREE.Vector3(.3,.7,.6).cross(out).normalize(),v=out.clone().cross(u);
+    for(let k=0;k<n;k++){
+      const a=k/n*Math.PI*2+i,spread=n===1?0:.95;
+      const d=out.clone().multiplyScalar(n===1?1:.6).addScaledVector(u,Math.cos(a)*spread).addScaledVector(v,Math.sin(a)*spread).normalize();
+      const h=p.clone().addScaledVector(d,1.12);addAtom(h,R.H,matH);const b=addBond(matBond);place(b,p,h,.065);
+    }
+  });
+
+  /* Glow at the C=C bond. */
+  const glowCanvas=document.createElement('canvas');glowCanvas.width=glowCanvas.height=128;
+  const gx=glowCanvas.getContext('2d'),gr=gx.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0,'rgba(255,90,60,1)');gr.addColorStop(.35,'rgba(255,70,40,.4)');gr.addColorStop(1,'rgba(255,60,30,0)');gx.fillStyle=gr;gx.fillRect(0,0,128,128);
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(glowCanvas),transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}));
+  const mid=heavy[0].clone().add(heavy[1]).multiplyScalar(.5);glow.position.copy(mid);glow.scale.setScalar(4.5);mol.add(glow);
+
+  /* The attacking H2O2: its first oxygen ends up as the epoxide bridge. */
+  const normal=new THREE.Vector3(.1,.05,1).normalize();
+  const O1=addAtom(new THREE.Vector3(),R.O,matO),O2=addAtom(new THREE.Vector3(),R.O,matO);
+  const H1=addAtom(new THREE.Vector3(),R.H,matH),H2=addAtom(new THREE.Vector3(),R.H,matH);
+  const bOO=addBond(matBond),bH1=addBond(matBond),bH2=addBond(matBond),bE1=addBond(matBond),bE2=addBond(matBond);
+  const far=mid.clone().add(new THREE.Vector3(5.5,3.8,6)),near=mid.clone().addScaledVector(normal,2.5);
+  const bridge=mid.clone().addScaledVector(normal,1.15),leave=mid.clone().add(new THREE.Vector3(1.6,4.6,4));
+  const e=(t)=>t*t*(3-2*t);
+  function updateReaction(t){
+    const a=e(S.attack),x=e(S.epox);
+    const start=tmp.clone().lerpVectors(far,near,a);
+    start.y+=Math.sin(t*1.2)*.12*(1-a);
+    const o1=start.clone().add(new THREE.Vector3(-.35,0,-.55)).lerp(bridge,x);
+    const base=start.clone().add(new THREE.Vector3(.45,.2,.6)).lerp(leave,x);
+    O1.position.copy(o1);O2.position.copy(base);
+    const h1=o1.clone().add(new THREE.Vector3(-.75,.55,.2).multiplyScalar(1-x)).lerp(base.clone().add(new THREE.Vector3(-.8,.5,.1)),x);
+    const h2=base.clone().add(new THREE.Vector3(.8,.5,.2));
+    H1.position.copy(h1);H2.position.copy(h2);
+    place(bH1,x<.5?o1:base,h1,.06);place(bH2,base,h2,.06);
+    const showOO=1-Math.min(1,x*2.2);bOO.visible=showOO>.01;if(bOO.visible)place(bOO,o1,base,.1*showOO);
+    const showE=Math.max(0,x*1.6-.6);bE1.visible=bE2.visible=showE>.01;
+    if(showE>.01){place(bE1,heavy[0],o1,.1*Math.min(1,showE));place(bE2,heavy[1],o1,.1*Math.min(1,showE))}
+    secondBond.scale.x=secondBond.scale.z=.085*(1-x);secondBond.visible=x<.98;
+    const vis=S.attack>.001||S.show>.2;[O1,O2,H1,H2,bOO,bH1,bH2].forEach(m=>{if(m!==bOO)m.visible=vis});
+    const hot=Math.max(S.hot*(1-x*.75),S.pulse);
+    matHot.emissiveIntensity=matHotBond.emissiveIntensity=hot*(1.4+Math.sin(t*5)*.25);
+    glow.material.opacity=hot*.9;
+  }
+
+  /* Spray droplets: a thin ambient mist that clears before the closing chapter. */
+  const N=low?700:1600,pos=new Float32Array(N*3),rnd=new Float32Array(N*2);
+  for(let i=0;i<N;i++){
+    pos[i*3]=(Math.random()-.5)*26;pos[i*3+1]=(Math.random()-.5)*15;pos[i*3+2]=(Math.random()-.5)*12-3;
+    rnd[i*2]=Math.random();rnd[i*2+1]=.5+Math.random()*1.6;
+  }
+  const gP=new THREE.BufferGeometry();
+  gP.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  gP.setAttribute('aRand',new THREE.BufferAttribute(rnd,2));
+  const matP=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
+    uniforms:{uTime:{value:0},uPx:{value:1},uAlpha:{value:.3}},
+    vertexShader:`attribute vec2 aRand;uniform float uTime,uPx;varying float vR;
+      void main(){vR=aRand.x;
+      vec3 c=position+vec3(sin(uTime*.18+aRand.x*40.)*.5,mod(position.y+uTime*.22*aRand.y+7.5,15.)-7.5-position.y,cos(uTime*.15+aRand.x*20.)*.4);
+      vec4 mv=modelViewMatrix*vec4(c,1.);gl_Position=projectionMatrix*mv;
+      gl_PointSize=uPx*aRand.y*30./-mv.z;}`,
+    fragmentShader:`uniform float uAlpha;varying float vR;
+      void main(){vec2 p=gl_PointCoord-.5;float r=length(p);if(r>.5)discard;
+      float a=smoothstep(.5,.28,r);gl_FragColor=vec4(vec3(1.),a*uAlpha*(.45+vR*.55));}`});
+  const mist=new THREE.Points(gP,matP);mist.frustumCulled=false;scene.add(mist);
+
+  /* Free H2O2 molecules drifting around the limonene. */
+  const drifters=[];
+  for(let i=0;i<(low?0:3);i++){
+    const g=new THREE.Group();
+    const a=new THREE.Mesh(gAtom,matO),b=new THREE.Mesh(gAtom,matO),h=new THREE.Mesh(gAtom,matH),k=new THREE.Mesh(gAtom,matH);
+    a.position.set(-.6,0,0);b.position.set(.6,.1,.2);h.position.set(-1.2,.6,.2);k.position.set(1.2,.6,-.2);
+    a.scale.setScalar(.42);b.scale.setScalar(.42);h.scale.setScalar(.22);k.scale.setScalar(.22);g.add(a,b,h,k);
+    const ang=i/3*Math.PI*2;g.userData={ang,r:6.5+i%3*1.6,y:(i%4-1.5)*2.1,z:-3-i%3*1.8,sp:.05+.03*(i%3)};
+    scene.add(g);drifters.push(g);
+  }
+
+  /* Pointer tilt. */
+  const ptr={x:0,y:0,sx:0,sy:0};
+  addEventListener('pointermove',ev=>{ptr.x=ev.clientX/innerWidth-.5;ptr.y=ev.clientY/innerHeight-.5},{passive:true});
+
+  function size(){
+    const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+    matP.uniforms.uPx.value=renderer.getPixelRatio()*(h/900)*(narrow()?2.6:3.4);
+    
+  }
+  addEventListener('resize',size);size();
+
+  const qSpin=new THREE.Quaternion(),qFace=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.45,.3,.2)),ev=new THREE.Euler();
+  const clock=new THREE.Clock();let spinT=0;
+  renderFrame=()=>{
+    const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+    spinT+=dt*S.spin*.28;
+    ptr.sx+=(ptr.x-ptr.sx)*.06;ptr.sy+=(ptr.y-ptr.sy)*.06;
+    ev.set(.5+Math.sin(t*.3)*.08,spinT,.25);qSpin.setFromEuler(ev);
+    mol.quaternion.slerpQuaternions(qSpin,qFace,e(S.face));
+    mol.rotation.x+=ptr.sy*.35;mol.rotation.y+=ptr.sx*.5;
+    const mx=narrow()?S.x*.12:S.x*Math.min(1,camera.aspect/1.6),my=narrow()?S.y+2.3:S.y;
+    mol.position.set(mx,my+Math.sin(t*.7)*.1,S.z);
+    const ms=S.scale*(.2+.8*S.intro)*(1-S.gone)*(narrow()?.68:Math.min(1,camera.aspect/1.6));mol.scale.setScalar(ms);mol.visible=ms>.01;
+    updateReaction(t);
+    drifters.forEach(g=>{const u=g.userData;const a=u.ang+t*u.sp;g.position.set(6+Math.cos(a)*2.4,4+Math.sin(a)*.55,-5);g.rotation.set(t*.3+u.ang,t*.2,0);g.scale.setScalar(S.show);g.visible=S.show>.02});
+    matP.uniforms.uTime.value=t;matP.uniforms.uAlpha.value=.3*(1-S.morph);mist.visible=S.morph<.99;
+    camera.position.set(ptr.sx*.5,-ptr.sy*.3,S.cam+(1-S.intro)*7);camera.lookAt(0,0,0);
+    renderer.render(scene,camera);
+  };
+  return true;
+}
+const has3D=initStage();
+
+/* ---------- Motion ---------- */
+function loop(){if(!document.hidden)renderFrame();requestAnimationFrame(loop)}
+if(has3D){if(reduced){renderFrame();renderFrame()}else loop()}
+
+if(window.gsap&&window.ScrollTrigger&&!reduced){
+  gsap.registerPlugin(ScrollTrigger);
+  document.body.classList.add('motion');
+
+  /* Hero entrance starts from a resting layout, so a stalled script still leaves readable text. */
+  gsap.from('.hero h1 .ln>span',{yPercent:108,duration:1.15,ease:'expo.out',stagger:.09,delay:.1});
+  gsap.from('.hero-foot>*',{y:22,opacity:0,duration:.9,ease:'power3.out',delay:.65,stagger:.12});
+  S.intro=0;gsap.to(S,{intro:1,duration:1.8,ease:'expo.out'});
+
+  const scrub=(trigger,start,end)=>({scrollTrigger:{trigger,start,end,scrub:1}});
+  const hudState=document.getElementById('hud-state'),hudRule=document.getElementById('hud-rule');
+  const setHud=(a,b)=>{hudState.textContent=a;hudRule.textContent=b};
+
+  /* One master timeline owns the molecule's path; its time units are roughly viewport heights of scroll. */
+  gsap.timeline({defaults:{ease:'none'},scrollTrigger:{trigger:'#masalah',start:'top 95%',endTrigger:'#cara',end:'top top',scrub:1}})
+    .to(S,{x:3.6,y:0,scale:1,cam:13.5,spin:.15,face:1,hot:1,show:0,duration:.85},0)
+    .to(S,{attack:1,duration:.9},1.1)
+    .to(S,{epox:1,duration:.9},2.1)
+    .to(S,{x:6.5,scale:0,duration:.5},3.4);
+
+  ScrollTrigger.create({trigger:'#masalah',start:'top 60%',onEnter:()=>setHud('terdeteksi','terpicu'),onLeaveBack:()=>setHud('utuh','belum dicek')});
+  ScrollTrigger.create({trigger:'#serang',start:'top 40%',onEnter:()=>setHud('diserang','terpicu'),onLeaveBack:()=>setHud('terdeteksi','terpicu')});
+  ScrollTrigger.create({trigger:'#rugi',start:'top 40%',onEnter:()=>setHud('teroksidasi','terpicu'),onLeaveBack:()=>setHud('diserang','terpicu')});
+
+  document.body.classList.add('at-top');
+  ScrollTrigger.create({start:0,end:()=>innerHeight*.7,onToggle:s=>document.body.classList.toggle('at-top',s.isActive)});
+  ScrollTrigger.create({start:0,end:'max',onUpdate:s=>document.body.classList.toggle('head-away',s.direction>0&&s.scroll()>innerHeight*.6)});
+  ScrollTrigger.create({trigger:'#cara',start:'top 60%',endTrigger:'#target',end:'bottom 40%',toggleClass:{targets:'body',className:'on-app'}});
+
+  gsap.matchMedia().add('(min-width:900px)',()=>{
+    const track=document.querySelector('.track');
+    const dist=()=>Math.max(0,track.scrollWidth-innerWidth);
+    gsap.to(track,{x:()=>-dist(),ease:'none',scrollTrigger:{trigger:'#cara',start:'top top',end:()=>'+='+dist()*1.15,pin:true,scrub:.6,invalidateOnRefresh:true,anticipatePin:1}});
+  });
+  document.querySelector('.track-clip').style.overflow='hidden';
+
+  /* The molecule retires behind the module cards. */
+  gsap.to(S,{gone:1,ease:'none',scrollTrigger:{trigger:'#aplikasi',start:'top 70%',end:'top 15%',scrub:1}});
+
+  /* App screens fan out in perspective. */
+  const cards=gsap.utils.toArray('.deck figure');
+  gsap.fromTo(cards,{rotateX:24,rotateY:-16,z:-160,y:120},{rotateX:0,rotateY:0,z:0,y:0,ease:'none',stagger:.08,scrollTrigger:{trigger:'.deck',start:'top 95%',end:'top 35%',scrub:1}});
+
+  /* Citrus arrives: the mist clears while the room changes colour. */
+  gsap.to('#bg-citrus',{clipPath:'inset(0% 0 0 0)',ease:'none',scrollTrigger:{trigger:'#coba',start:'top bottom',end:'top top',scrub:true}});
+  gsap.to(S,{morph:1,ease:'none',scrollTrigger:{trigger:'#coba',start:'top 80%',end:'top 5%',scrub:1}});
+  ScrollTrigger.create({trigger:'#coba',start:'top 45%',onToggle:s=>document.body.classList.toggle('on-citrus',s.isActive),end:'bottom top'});
+}
+</script>
+</body></html>

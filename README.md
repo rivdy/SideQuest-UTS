@@ -1,3 +1,11 @@
+# Halaman utama terbaru
+
+Buka http://localhost:3000 untuk landing dari file landing.html yang diberikan pengguna. Semua tombol Coba demo menuju /baylab-figma.html (login dan dashboard sesuai file Figma). Tiga screenshot berada di frontend/public/screens. Three.js, GSAP, ScrollTrigger, dan Google Fonts pada landing masih dimuat dari CDN seperti pada sumber; animasi lengkap memerlukan internet.
+
+File sumber aktif: frontend/public/landing.html dan frontend/public/baylab-figma.html. Next.js memetakan / ke landing.html melalui beforeFiles rewrite. File index.html dan /demo.html tetap menyimpan prototipe terdahulu. Jangan memakai scripts/sync-login.mjs untuk memperbarui landing Figma; script itu hanya untuk login prototipe terdahulu.
+
+Validasi integrasi: lint, production build, smoke HTTP, dan 10 pemeriksaan browser lulus, termasuk WebGL, library animasi, screenshot, layout ponsel, mini screening, login, serta dashboard. Ulangi dengan node qa-landing.mjs saat server berjalan di port 3000.
+
 # Pengembangan bertahap
 
 Fondasi aplikasi server tersedia di frontend/ dan backend/. Lihat [DEVELOPMENT.md](DEVELOPMENT.md) untuk menjalankan dan [SECURITY.md](SECURITY.md) untuk status 20 kontrol keamanan. Ini baru Tahap 0; uraian di bawah membahas prototipe HTML sebelumnya.

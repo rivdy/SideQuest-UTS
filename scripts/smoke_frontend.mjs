@@ -27,7 +27,9 @@ try {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /BAYLab AI/);
-  assert.match(html, /Ide hebat dimulai/);
+  assert.match(html, /id="stage"/);
+  assert.match(html, /href="baylab-figma.html"/);
+  for (const asset of ["/baylab-figma.html", "/screens/dashboard.jpg", "/screens/screening.jpg", "/screens/rekomendasi.jpg"]) assert.equal((await fetch(base + asset)).status, 200, asset);
   assert.match(html, /lang="id"/);
   assert.equal(response.headers.get("x-frame-options"), "DENY");
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");

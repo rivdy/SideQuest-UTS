@@ -24,7 +24,7 @@ async function check(name,expression){const result=await evaluate(expression);re
 async function navigate(page){await evaluate('location.hash='+JSON.stringify(page));await new Promise(r=>setTimeout(r,100))}
 async function shot(name){const r=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(out,name+'.png'),Buffer.from(r.data,'base64'))}
 try {
-for (const target of [url, 'http://127.0.0.1:3318']) {
+for (const target of [url, 'http://127.0.0.1:3318/demo.html']) {
  await call('Page.navigate',{url:target}); await new Promise(r=>setTimeout(r,1300));
  await check(target+' login visible','!!document.querySelector("#bl-login-form") && document.querySelector("h1").textContent.includes("Racik")');
  await check('three perfume bottles','document.querySelectorAll(".bl-perfume-bottle").length===3');
