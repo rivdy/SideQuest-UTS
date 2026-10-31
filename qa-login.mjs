@@ -26,13 +26,15 @@ async function shot(name){const r=await call('Page.captureScreenshot',{format:'p
 try {
 for (const target of [url, 'http://127.0.0.1:3318']) {
  await call('Page.navigate',{url:target}); await new Promise(r=>setTimeout(r,1300));
- await check(target+' login visible','!!document.querySelector("#bl-login-form") && document.querySelector("h1").innerText.includes("Racik")');
+ await check(target+' login visible','!!document.querySelector("#bl-login-form") && document.querySelector("h1").textContent.includes("Racik")');
+ await check('three perfume bottles','document.querySelectorAll(".bl-perfume-bottle").length===3');
+ await check('botanical ingredients','document.querySelectorAll(".bl-ingredient").length===6');
  await check('desktop no overflow','document.documentElement.scrollWidth<=innerWidth');
  await shot(target.startsWith('file')?'login-soda-html-desktop':'login-soda-next-desktop');
  await evaluate('document.querySelector("[data-color=teal]").click()'); await new Promise(r=>setTimeout(r,100));
  await check('theme toggles','document.querySelector(".bl-login").dataset.theme==="teal"');
  await evaluate('document.querySelector("#bl-pause").click()'); await new Promise(r=>setTimeout(r,100));
- await check('pause stops animation','getComputedStyle(document.querySelector(".bl-bottle-position")).animationPlayState==="paused"');
+ await check('pause stops animation','(async()=>{const el=document.querySelector(".bl-perfume-position");const before=el.style.transform;await new Promise(r=>setTimeout(r,160));return before===el.style.transform})()');
  await evaluate('document.querySelector("#bl-reveal").click()'); await new Promise(r=>setTimeout(r,100));
  await check('password reveal','document.querySelector("#password").type==="text"');
  await evaluate('document.querySelector("#bl-forgot").click()'); await new Promise(r=>setTimeout(r,100));
@@ -48,6 +50,11 @@ for (const target of [url, 'http://127.0.0.1:3318']) {
   await check('responsive '+width,'document.documentElement.scrollWidth<=innerWidth');
   if(width===390){await new Promise(r=>setTimeout(r,1200));await evaluate('window.scrollTo(0,0)');await shot(target.startsWith('file')?'login-soda-html-mobile':'login-soda-next-mobile');}
  }
+ await evaluate('document.querySelector(".bl-research").scrollIntoView()');
+ await new Promise(r=>setTimeout(r,400));
+ await check('research trace starts','Number(document.querySelector(".bl-map-trace").style.strokeDashoffset)<100');
+ await check('three ingredient panels','document.querySelectorAll(".bl-note-card").length===3');
+ await shot(target.startsWith('file')?'kimi-research-html':'kimi-research-next');
  await evaluate('document.querySelector(".bl-demo").click()'); await new Promise(r=>setTimeout(r,1400));
  await check('demo opens existing dashboard','location.hash==="#dashboard" && !!document.querySelector(".dashboard")');
  await call('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});

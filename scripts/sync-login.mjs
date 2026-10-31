@@ -1,4 +1,4 @@
-﻿// Keep the buildless prototype login synchronized with the Next.js design.
+// Keep the buildless prototype login synchronized with the Next.js design.
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../frontend/package.json', import.meta.url));
@@ -8,8 +8,8 @@ const { renderToStaticMarkup } = require('react-dom/server');
 const source = fs.readFileSync('frontend/src/app/page.tsx', 'utf8');
 const output = ts.transpileModule(source, {compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
 const mod = {exports:{}};
-new Function('require','module','exports',output)(require,mod,mod.exports);
-const markup = renderToStaticMarkup(React.createElement(mod.exports.default)).replaceAll('./demo.html#dashboard','#dashboard');
+new Function('require','module','exports',output+';exports.mountKimiMotion=mountKimiMotion;')(require,mod,mod.exports);
+const markup = renderToStaticMarkup(React.createElement(mod.exports.default)).replaceAll('./demo.html#','#');
 let html = fs.readFileSync('index.html','utf8');
 html = html.replace(/^function login\(\).*$/m, () => 'function login(){return '+JSON.stringify(markup)+'}');
 const css = fs.readFileSync('frontend/src/app/login.css','utf8');
@@ -28,7 +28,9 @@ document.addEventListener('click',function(event){
 });
 document.addEventListener('pointermove',function(event){const root=event.target.closest('.bl-login');if(!root||root.dataset.paused==='true'||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const rect=root.getBoundingClientRect();root.style.setProperty('--mx',(event.clientX-rect.left-rect.width/2)/65+'px');root.style.setProperty('--my',(event.clientY-rect.top-rect.height/2)/65+'px');});
 `;
-html = html.replace('</body>','<script id="baylab-login-events">'+events+'</script></body>');
+const motion = mod.exports.mountKimiMotion.toString();
+const motionBoot = 'const mountKimiMotion='+motion+';let loginMotionRoot=null,stopLoginMotion=null;function refreshLoginMotion(){const root=document.querySelector(".bl-login");if(root===loginMotionRoot)return;if(stopLoginMotion)stopLoginMotion();loginMotionRoot=root;stopLoginMotion=root?mountKimiMotion(root):null;}new MutationObserver(refreshLoginMotion).observe(document.getElementById("app"),{childList:true});refreshLoginMotion();';
+html = html.replace('</body>','<script id="baylab-login-events">'+events+motionBoot+'</script></body>');
 fs.writeFileSync('index.html',html);
 fs.mkdirSync('frontend/public',{recursive:true});
 fs.writeFileSync('frontend/public/demo.html',html);

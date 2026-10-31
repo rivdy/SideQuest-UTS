@@ -49,3 +49,21 @@ Login kini memakai identitas BAYLab dengan latar violet/teal, botol laboratorium
 Buka index.html untuk mencoba langsung. Versi Next.js ada di frontend/src/app/page.tsx; tombol Jelajahi demo membuka public/demo.html yang berisi prototipe lama. Autentikasi organisasi belum terhubung; form tidak mengirim atau menyimpan password.
 
 Setelah mengubah komponen login atau login.css, jalankan node scripts/sync-login.mjs dari root untuk menyamakan versi HTML dan salinan demo. Setelah itu build ulang frontend. Pengujian login: node qa-login.mjs (memerlukan server frontend lokal pada port 3318). Hasil terbaru: 24 pemeriksaan browser lolos untuk versi HTML dan Next.js, termasuk viewport 320/390/768 px. Screenshot ada di qa/login-soda-*.png.
+
+## Koleksi parfum pada login
+
+Visual login diperbarui menjadi tiga botol parfum: Citrus Lemon, Green Bergamot, dan Soft Lavender. Irisan citrus, lemon utuh, daun, serta lavender memiliki gerakan independen. Semua ilustrasi dibuat sebagai CSS/SVG lokal untuk identitas BAYLab; bukan foto produk yang diunduh atau produk parfum siap jual. Tema aroma tidak menyatakan kompatibilitas dengan H2O2.
+
+Referensi internet untuk arah visual dan bahan aroma:
+- LabSolue 101 Bergamotto: https://labsolueperfume.com/en/products/101-bergamotto-eau-de-parfum
+- Presentasi botol dengan lemon, bergamot, dan lavender: https://www.intenseoud.com/products/rome-imagine-eau-de-parfum-spray-100ml-3-4-oz-by-mast-perfume
+
+Validasi setelah perubahan: lint dan build lulus; 28 pemeriksaan browser lulus pada versi HTML dan Next.js, termasuk tiga botol, enam elemen bahan, kontrol animasi, form, demo, serta ukuran 320/390/768 px.
+
+## Adaptasi template KIMI
+
+Login memakai permukaan terang, tipografi condensed, aksen ungu/teal, panel bersudut, kontur Canvas, scan line, floating botanical, dan spring reveal. Hero mengecil saat panel riset menutupinya pada desktop. Bagian tambahan menampilkan jalur riset yang digambar selama enam detik dan tiga kartu karakter aroma. Ini adaptasi visual BAYLab, bukan replika aset pembalap, shader helm, atau keseluruhan situs KIMI.
+
+Animasi menggunakan satu requestAnimationFrame dengan cleanup saat login ditinggalkan; pause dan prefers-reduced-motion didukung. Canvas dan SVG dibuat lokal, tanpa tambahan dependensi WebGL. Template sumber: lampiran pengguna 8ea1c099-bc42-4190-9da9-7d44aa756d7d/Pasted text.txt.
+
+Validasi adaptasi: lint, production build, smoke HTTP, dan 32 pemeriksaan browser lulus. Pengujian mencakup HTML tunggal serta Next.js, ukuran 320/390/768 px, form, demo, pause, koleksi parfum, dan jalur riset. Autentikasi organisasi tetap belum terhubung.
