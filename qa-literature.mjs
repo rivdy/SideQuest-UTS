@@ -1,0 +1,24 @@
+﻿// Exercise the actual view template against an RDKit result without a browser.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {execFileSync} from 'node:child_process';
+const python = process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python';
+const payload=JSON.parse(execFileSync(python,['-c','import json; from app.chemistry.engine import screen; from app.chemistry.evidence import SOURCES; print(json.dumps({"screen":screen("C=CC").model_dump(),"sources":[s.model_dump() for s in SOURCES]}))'],{encoding:'utf8'}));
+const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const context={views:{},esc:escape,head:()=>'',badge:escape,route:()=> 'unused',render:()=>{},setTimeout,AbortSignal,URL,Blob,document:{createElement:()=>({}),head:{append:()=>{}},querySelector:()=>null},fetch:async path=>({ok:true,json:async()=>path.endsWith('/evidence')?{sources:payload.sources}:payload.screen})};
+context.window=context;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('frontend/public/chemistry-screening.js','utf8'),context);
+context.chemistryInput('C=CC');await context.chemistryScreen();
+let html=context.views.screening();
+assert.ok(html.includes('10.1039/C8RE00094H') && html.includes('10.1002/ffj.3210'));
+assert.ok(html.includes(escape(payload.screen.matches[0].rule.evidence[0].limitation)));
+assert.ok(html.includes('EVONIK-H2O2-STABILITY'));
+await context.chemistryEvidence();html=context.views.screening();
+assert.ok(html.includes('10.1039/C9RA02021G') && html.includes('403'));
+assert.ok(html.includes('Lihat sumber literatur') && html.includes('Draft berbasis literatur'));
+payload.screen.matches[0].rule.evidence[0].title='<img src=x onerror=alert(1)>';
+html=context.views.screening();
+assert.ok(!html.includes('<img src=x') && html.includes('&lt;img src=x'));
+console.log('6 literature view checks passed');

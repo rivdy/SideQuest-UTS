@@ -8,9 +8,7 @@ client = TestClient(app)
 def test_health_contract() -> None:
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "ok", "service": "baylab-api", "stage": "scaffolding"
-    }
+    assert response.json() == {"status": "ok", "service": "baylab-api", "stage": "local-rag"}
     assert response.headers["cache-control"] == "no-store"
 
 
@@ -34,6 +32,6 @@ def test_no_wildcard_cors() -> None:
 
 def test_openapi_response_schema() -> None:
     schema = client.get("/openapi.json").json()
-    assert schema["paths"]["/health"]["get"]["responses"]["200"]["content"][
-        "application/json"
-    ]["schema"]["$ref"].endswith("/HealthResponse")
+    assert schema["paths"]["/health"]["get"]["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ]["$ref"].endswith("/HealthResponse")

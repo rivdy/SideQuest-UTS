@@ -34,3 +34,7 @@ Referensi: [OWASP HTML5 Security](https://cheatsheetseries.owasp.org/cheatsheets
 ## Temuan dependency lokal — 31 Oktober 2026
 
 Audit runtime Python dan npm produksi tidak melaporkan kerentanan dikenal. Audit npm lengkap masih memiliki 16 temuan sedang dalam rantai ESLint/minimatch; tidak ada temuan tinggi/kritis. Advisory: https://github.com/advisories/GHSA-g3hv-75wg-m249. Belum ada perbaikan kompatibel yang diterapkan. CI mengaudit seluruh dependency npm dengan ambang gagal high; temuan moderate tetap tercetak dan harus ditinjau. ESLint 9 juga mengeluarkan pemberitahuan akhir dukungan saat instalasi; migrasi lint perlu diuji bersama kompatibilitas plugin Next/React sebelum produksi.
+
+## Perubahan setelah implementasi RAG lokal
+
+Endpoint /api/rag kini menerima unggah PDF/TXT/MD maksimal 16 MB dan menyimpan teks ekstraksi di backend/data/rag.sqlite3 (diabaikan Git, belum terenkripsi). Ada batas input, cek ekstensi/signature PDF, konfirmasi hak penggunaan, penolakan origin/host non-localhost, parameterized SQL, dan pembatasan laju sederhana. Belum ada autentikasi organisasi, pemisahan pengguna/proyek, OCR, antivirus, sandbox parser, atau backup terenkripsi. Guard localhost bukan pengganti otorisasi. Ollama dikunci ke alamat loopback dengan trust_env=False. Validasi ID/kutipan tidak membuktikan entailment klaim. Lihat RAG.md sebelum penggunaan atau deployment.

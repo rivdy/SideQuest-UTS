@@ -1,3 +1,9 @@
+## Pembaruan 3 November 2026
+
+Enam sumber publik telah dihubungkan ke screening dan diindeks sebagai catatan literatur draft dalam RAG lokal. Kondisi studi dan batas penerapan ikut ditampilkan; tidak mengubah status validasi ahli. Lihat [LITERATURE.md](LITERATURE.md).
+
+Screening RDKit + PubChem live tersedia di http://localhost:3000/baylab-figma.html#screening. Semua aturan masih draft. Panduan dan hasil pengujian: [CHEMISTRY.md](CHEMISTRY.md).
+
 # Halaman utama terbaru
 
 Buka http://localhost:3000 untuk landing dari file landing.html yang diberikan pengguna. Semua tombol Coba demo menuju /baylab-figma.html (login dan dashboard sesuai file Figma). Tiga screenshot berada di frontend/public/screens. Three.js, GSAP, ScrollTrigger, dan Google Fonts pada landing masih dimuat dari CDN seperti pada sumber; animasi lengkap memerlukan internet.
@@ -8,7 +14,7 @@ Validasi integrasi: lint, production build, smoke HTTP, dan 10 pemeriksaan brows
 
 # Pengembangan bertahap
 
-Fondasi aplikasi server tersedia di frontend/ dan backend/. Lihat [DEVELOPMENT.md](DEVELOPMENT.md) untuk menjalankan dan [SECURITY.md](SECURITY.md) untuk status 20 kontrol keamanan. Ini baru Tahap 0; uraian di bawah membahas prototipe HTML sebelumnya.
+Fondasi aplikasi server tersedia di frontend/ dan backend/. Lihat [DEVELOPMENT.md](DEVELOPMENT.md) untuk menjalankan dan [SECURITY.md](SECURITY.md) untuk status 20 kontrol keamanan. Server RAG dan screening struktur telah ditambahkan; sebagian uraian di bawah membahas prototipe HTML sebelumnya. Status terkini ada pada Batas implementasi.
 
 # BAYLab AI
 
@@ -35,11 +41,17 @@ Retensi = kadar akhir / kadar awal × 100%.
 
 Kriteria adalah asumsi MVP, bukan standar produk tervalidasi. Semua baris ekspor memiliki Data_Origin=synthetic dan Eligible_For_Training=false. Dataset sintetis terpisah dari state.results dan tidak menambah data latih. Nilai sintetis menguji logika aplikasi, bukan hubungan ilmiah antar bahan.
 
-## Batas implementasi
+## Batas implementasi terkini
 
-Tidak ada autentikasi organisasi, server, RDKit, PubChem live, pencarian RAG langsung, atau pelatihan CatBoost/XGBoost. SMARTS ditampilkan sebagai dokumentasi aturan; penapisan berjalan dari metadata gugus yang dikurasi, bukan dari struktur molekul arbitrer. Skor kandidat dan grafik ML lama tetap ilustrasi, tidak dihitung ulang dari input. Rujukan ilmiah diverifikasi saat pengembangan pada 30 Oktober 2026 dan tidak diperbarui otomatis.
+Aplikasi aktif di localhost:3000 sudah memiliki server FastAPI, RAG lokal berbasis dokumen, serta screening RDKit dan PubChem live. Lihat [CHEMISTRY.md](CHEMISTRY.md) dan [RAG.md](RAG.md).
 
-Data tersimpan pada localStorage di browser/profil yang sama. Unggah hanya memilih berkas lokal, belum mengirim atau mengekstrak dokumen. Jangan gunakan akun asli atau data rahasia dalam prototipe.
+- Screening pada baylab-figma.html#screening dihitung dari SMILES input, bukan metadata gugus tetap. SMARTS benar-benar dijalankan oleh RDKit. Enam pola berstatus draft; bukan aturan LKPI R-01 sampai R-12 dan belum menghasilkan kesimpulan risiko/kompatibilitas.
+- PubChem diakses saat diminta pengguna, dengan URL sumber dan waktu pengambilan. Rujukan ilmiah lama tidak otomatis diverifikasi ulang oleh pencarian identitas ini.
+- RAG menelusuri dokumen lokal. Jawaban generatif memerlukan model Ollama tersedia; tanpa model, UI hanya menampilkan hasil retrieval. Status model harus diperiksa saat menjalankan aplikasi.
+- Autentikasi organisasi belum tersedia. Login dan profil aplikasi masih demo. Skor kandidat serta grafik ML lama tetap ilustrasi; belum ada pelatihan CatBoost/XGBoost maupun pemeringkatan ulang berbasis formulasi.
+- Spreadsheet aturan ahli, 20 kasus acuan, serta data eksperimen nyata belum tersedia. Validasi risiko dan kelayakan model tidak dapat digantikan dengan data buatan.
+
+Batas prototipe lama: index.html dan demo.html masih menggunakan metadata terkurasi serta localStorage, dan bukan antarmuka screening server. Jangan gunakan akun asli atau data rahasia pada bagian demo. Screening baru menyimpan input/hasil hanya dalam memori halaman; dokumen RAG disimpan di backend/data yang diabaikan Git.
 
 Metrik pitching — 35%, Rp140 juta/tahun, 12 ke 8 bulan, dan TKT 2 ke 4 — ditulis sebagai target proposal, bukan hasil yang telah dicapai.
 
@@ -75,3 +87,7 @@ Login memakai permukaan terang, tipografi condensed, aksen ungu/teal, panel bers
 Animasi menggunakan satu requestAnimationFrame dengan cleanup saat login ditinggalkan; pause dan prefers-reduced-motion didukung. Canvas dan SVG dibuat lokal, tanpa tambahan dependensi WebGL. Template sumber: lampiran pengguna 8ea1c099-bc42-4190-9da9-7d44aa756d7d/Pasted text.txt.
 
 Validasi adaptasi: lint, production build, smoke HTTP, dan 32 pemeriksaan browser lulus. Pengujian mencakup HTML tunggal serta Next.js, ukuran 320/390/768 px, form, demo, pause, koleksi parfum, dan jalur riset. Autentikasi organisasi tetap belum terhubung.
+
+## RAG lokal
+
+Chat AI pada aplikasi Figma kini menggunakan indeks dokumen lokal dan adapter Ollama. Panduan instalasi, batas keamanan, sumber awal, serta cara menjalankan tersedia di [RAG.md](RAG.md). Model harus selesai diunduh agar mode jawaban generatif aktif; statusnya diperlihatkan di UI. Tanpa model, hasil hanya berupa kutipan sumber hasil pencarian.

@@ -3,9 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  experimental: { proxyClientMaxBodySize: "17mb" },
   async rewrites() {
     return {
-      beforeFiles: [{ source: "/", destination: "/landing.html" }],
+      beforeFiles: [
+        { source: "/", destination: "/landing.html" },
+        { source: "/api/rag/:path*", destination: "http://127.0.0.1:8000/api/rag/:path*" },
+        { source: "/api/chemistry/:path*", destination: "http://127.0.0.1:8000/api/chemistry/:path*" }
+      ],
       afterFiles: [],
       fallback: []
     };

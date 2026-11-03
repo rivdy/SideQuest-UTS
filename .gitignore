@@ -12,3 +12,5 @@ coverage/
 *.tsbuildinfo
 qa/
 *.log
+backend/data/
+data/
