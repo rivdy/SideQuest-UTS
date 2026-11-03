@@ -230,3 +230,51 @@ def test_chunks_overlap_without_missing_words() -> None:
     result = chunks(" ".join(f"word{i}" for i in range(650)))
     assert "word255" in result[0] and "word255" in result[1]
     assert "word649" in result[-1]
+
+
+def test_cpu_generation_budget_and_source_scope(monkeypatch):
+    sources = [
+        {
+            "id": f"source-{i}",
+            "title": "Test",
+            "page": 1,
+            "text": "A sufficiently long source passage for testing.",
+        }
+        for i in range(5)
+    ]
+
+    def generated(*args, **kwargs):
+        import json
+
+        payload = kwargs["json"]
+        context = json.loads(payload["messages"][1]["content"])["untrusted_sources"]
+        assert [s["source_id"] for s in context] == ["source-0", "source-1"]
+        assert payload["options"]["num_ctx"] == 4096
+        assert payload["options"]["num_predict"] == 600
+        assert payload["think"] is False
+        return httpx.Response(
+            200,
+            request=httpx.Request("POST", "http://127.0.0.1:11434/api/chat"),
+            json={
+                "message": {
+                    "content": json.dumps(
+                        {
+                            "claims": [
+                                {
+                                    "text": "Unseen source must not be cited.",
+                                    "citations": [
+                                        {"source_id": "source-4", "quote": sources[4]["text"]}
+                                    ],
+                                }
+                            ]
+                        }
+                    )
+                }
+            },
+        )
+
+    monkeypatch.setattr(service.LocalModelClient, "post", generated)
+    result = service.answer("Test source selection", sources)
+    assert result["mode"] == "no_supported_answer"
+    assert result["claims"] == []
+    assert len(result["sources"]) == 5
