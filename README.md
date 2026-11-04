@@ -1,3 +1,5 @@
+Ollama lokal Qwen3 4B sudah siap dan jalur frontend ke model telah diuji pada 3 November 2026. Buka http://localhost:3000/baylab-figma.html#chat; lihat [RAG.md](RAG.md) untuk menjalankan ulang dan batas waktu respons.
+
 ## Pembaruan 3 November 2026
 
 Enam sumber publik telah dihubungkan ke screening dan diindeks sebagai catatan literatur draft dalam RAG lokal. Kondisi studi dan batas penerapan ikut ditampilkan; tidak mengubah status validasi ahli. Lihat [LITERATURE.md](LITERATURE.md).
@@ -48,7 +50,7 @@ Aplikasi aktif di localhost:3000 sudah memiliki server FastAPI, RAG lokal berbas
 - Screening pada baylab-figma.html#screening dihitung dari SMILES input, bukan metadata gugus tetap. SMARTS benar-benar dijalankan oleh RDKit. Enam pola berstatus draft; bukan aturan LKPI R-01 sampai R-12 dan belum menghasilkan kesimpulan risiko/kompatibilitas.
 - PubChem diakses saat diminta pengguna, dengan URL sumber dan waktu pengambilan. Rujukan ilmiah lama tidak otomatis diverifikasi ulang oleh pencarian identitas ini.
 - RAG menelusuri dokumen lokal. Jawaban generatif memerlukan model Ollama tersedia; tanpa model, UI hanya menampilkan hasil retrieval. Status model harus diperiksa saat menjalankan aplikasi.
-- Autentikasi organisasi belum tersedia. Login dan profil aplikasi masih demo. Skor kandidat serta grafik ML lama tetap ilustrasi; belum ada pelatihan CatBoost/XGBoost maupun pemeringkatan ulang berbasis formulasi.
+- Login organisasi sudah memakai sesi server, peran dan isolasi data organisasi. Peringkat dihitung dari penilaian bersumber dan bobot pengguna. CatBoost/XGBoost dilatih dari target terukur dengan grafik hasil holdout aktual. Lihat [WORKSPACE.md](WORKSPACE.md) dan [DATASET_REVIEW.md](DATASET_REVIEW.md). Model kelarutan telah dilatih; model retensi H2O2 menunggu data eksperimen nyata.
 - Spreadsheet aturan ahli, 20 kasus acuan, serta data eksperimen nyata belum tersedia. Validasi risiko dan kelayakan model tidak dapat digantikan dengan data buatan.
 
 Batas prototipe lama: index.html dan demo.html masih menggunakan metadata terkurasi serta localStorage, dan bukan antarmuka screening server. Jangan gunakan akun asli atau data rahasia pada bagian demo. Screening baru menyimpan input/hasil hanya dalam memori halaman; dokumen RAG disimpan di backend/data yang diabaikan Git.
@@ -62,7 +64,7 @@ Jalankan node qa.mjs untuk alur utama, dan node qa-modules.mjs untuk modul integ
 references/ memuat gambar asli ZIP. soda-backup.html menyimpan halaman awal; baylab-before-modules.html menyimpan versi BAYLab sebelum integrasi modul.
 
 
-## Login animasi bergaya Soda
+## Riwayat prototipe: login animasi bergaya Soda
 
 Login kini memakai identitas BAYLab dengan latar violet/teal, botol laboratorium berbasis CSS, molekul melayang, partikel, parallax pointer, serta tombol jeda. Pengaturan prefers-reduced-motion menonaktifkan animasi. Tidak menambahkan library animasi atau aset 3D eksternal.
 

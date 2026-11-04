@@ -6,7 +6,7 @@
   const modes = {generated:'Jawaban Ollama lokal',retrieval_only:'Sumber ditemukan · model belum siap',no_evidence:'Belum ada sumber',no_supported_answer:'Belum ada jawaban terdukung'};
   function redraw(){if(route()==='chat')render();}
   async function request(path, options={}){
-    const response=await fetch(api+path,{...options,signal:AbortSignal.timeout(path==='/ask'?195000:30000)});
+    const response=await (window.baylabFetch || fetch)(api+path,{...options,signal:AbortSignal.timeout(path==='/ask'?195000:30000)});
     let body;try{body=await response.json();}catch{throw new Error('Backend RAG belum aktif. Jalankan FastAPI di port 8000.');}
     if(!response.ok)throw new Error(typeof body.detail==='string'?body.detail:'Permintaan tidak valid. Periksa isian dan ukuran dokumen.');
     return body;

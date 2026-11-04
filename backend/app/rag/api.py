@@ -14,6 +14,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from pypdf import PdfReader
 from starlette.concurrency import run_in_threadpool
 
+from app.workspace.auth import current_org
+
 from .service import answer, model_status
 from .store import Store
 
@@ -23,9 +25,20 @@ recent: dict[str, deque[float]] = defaultdict(deque)
 
 
 @lru_cache
+def _store_for(path: str) -> Store:
+    return Store(Path(path))
+
+
 def get_store() -> Store:
     default = Path(__file__).resolve().parents[2] / "data" / "rag.sqlite3"
-    return Store(Path(os.getenv("BAYLAB_RAG_DB", str(default))))
+    path = Path(os.getenv("BAYLAB_RAG_DB", str(default)))
+    org = current_org.get()
+    if org != "lkpi":
+        path = path.with_name(path.stem + "." + org + path.suffix)
+    return _store_for(str(path))
+
+
+get_store.cache_clear = _store_for.cache_clear
 
 
 def guard(request: Request, category: str, limit: int) -> None:
@@ -36,7 +49,7 @@ def guard(request: Request, category: str, limit: int) -> None:
     if origin and urlparse(origin).hostname not in {"127.0.0.1", "localhost", "::1"}:
         raise HTTPException(403, "Origin tidak diizinkan.")
     now = time.monotonic()
-    bucket = recent[category]
+    bucket = recent[current_org.get() + ":" + category]
     while bucket and now - bucket[0] > 60:
         bucket.popleft()
     if len(bucket) >= limit:

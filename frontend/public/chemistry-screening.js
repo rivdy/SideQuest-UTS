@@ -4,7 +4,7 @@
   const safe = value => esc(String(value ?? ''));
   const redraw = () => { if(route()==='screening')render(); };
   async function request(path, body){
-    const response=await fetch('/api/chemistry'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(25000)});
+    const response=await (window.baylabFetch || fetch)('/api/chemistry'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(25000)});
     let value;
     try { value=await response.json(); }
     catch { throw new Error('Backend belum tersedia. Jalankan FastAPI di port 8000.'); }

@@ -27,7 +27,7 @@ def lock(roots: list[str], target: str) -> None:
 
 
 if __name__ == "__main__":
-    runtime = ["fastapi", "uvicorn", "httpx", "pypdf", "python-multipart", "rdkit"]
+    runtime = ["fastapi", "uvicorn", "httpx", "pypdf", "python-multipart", "rdkit", "argon2-cffi", "sqlalchemy", "catboost", "xgboost", "scikit-learn"]
     lock(runtime, "backend/requirements.lock")
     development = [
         item.metadata["Name"] for item in distributions()

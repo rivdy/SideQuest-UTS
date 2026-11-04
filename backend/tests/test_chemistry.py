@@ -1,5 +1,6 @@
 import httpx
 import pytest
+from conftest import sign_in
 from fastapi.testclient import TestClient
 
 from app.chemistry.engine import screen
@@ -11,7 +12,9 @@ from app.rag.api import recent
 @pytest.fixture
 def client():
     recent.clear()
-    return TestClient(app, base_url="http://127.0.0.1")
+    client = TestClient(app, base_url="http://127.0.0.1")
+    sign_in(client)
+    return client
 
 
 def ids(result):

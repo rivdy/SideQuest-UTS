@@ -3,6 +3,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from conftest import sign_in
 from fastapi.testclient import TestClient
 from pypdf import PdfWriter
 
@@ -18,7 +19,9 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setenv("BAYLAB_RAG_DB", str(tmp_path / "test.sqlite3"))
     api.get_store.cache_clear()
     api.recent.clear()
-    return TestClient(app, base_url="http://127.0.0.1")
+    client = TestClient(app, base_url="http://127.0.0.1")
+    sign_in(client)
+    return client
 
 
 def upload(

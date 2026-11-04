@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 import httpx
+from local_session import authenticate
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--wait", action="store_true")
@@ -14,6 +15,7 @@ deadline = time.monotonic() + (3600 if args.wait else 0)
 report_path = Path("qa/rag-live.json")
 report_path.parent.mkdir(exist_ok=True)
 with httpx.Client(timeout=200, trust_env=False) as client:
+    authenticate(client, "http://127.0.0.1:8000")
     while True:
         status = client.get("http://127.0.0.1:8000/api/rag/status").json()
         if status["generation"]["ready"]:

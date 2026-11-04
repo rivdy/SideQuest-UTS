@@ -1,6 +1,6 @@
 ﻿# Pengembangan BAYLab AI
 
-Tahap 0 membuat aplikasi baru di frontend/ dan backend/. Prototipe index.html tetap menjadi referensi UI, bukan aplikasi produksi. Modul dan skor ilustrasi di prototipe belum dipindahkan ke layanan server.
+Aplikasi aktif menggunakan frontend Next.js dan backend FastAPI dengan autentikasi, RAG, RDKit, pemeringkatan, pencatatan eksperimen, dan pelatihan model. Panduan akun dan data: [WORKSPACE.md](WORKSPACE.md). index.html dan demo.html adalah prototipe historis.
 
 ## Menjalankan tanpa Docker (PowerShell)
 
@@ -20,7 +20,7 @@ npm.cmd --prefix frontend run dev
 ```
 
 Frontend: http://localhost:3000. API: http://localhost:8000/health. Dokumentasi API: http://localhost:8000/docs.
-Respons health adalah liveness proses API saja, bukan pemeriksaan koneksi database atau Redis. Frontend tahap ini berupa halaman status fondasi, belum klien modul kimia.
+Respons health adalah liveness proses API saja, bukan pemeriksaan koneksi database atau Redis. Buka /baylab-figma.html#login untuk aplikasi aktif. Buat admin sekali dengan .venv/Scripts/python.exe scripts/bootstrap_admin.py.
 
 ## Docker Compose
 
