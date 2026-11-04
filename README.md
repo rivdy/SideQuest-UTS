@@ -59,9 +59,9 @@ Metrik pitching — 35%, Rp140 juta/tahun, 12 ke 8 bulan, dan TKT 2 ke 4 — dit
 
 ## Pengujian
 
-Jalankan node qa.mjs untuk alur utama, dan node qa-modules.mjs untuk modul integrasi. Keduanya memakai Chrome headless dengan profil khusus di qa/chrome-profile dan tidak menyentuh profil browser utama. Hasil ada di qa/report.json serta qa/modules-report.json. Screenshot tersimpan di qa/.
+Jalankan node qa.mjs untuk alur utama, dan node qa-modules.mjs untuk modul integrasi. Keduanya memakai Chrome headless dengan profil khusus di qa/chrome-profile dan tidak menyentuh profil browser utama. Hasil ada di qa/report.json serta qa/modules-report.json. Screenshot dihasilkan di qa/ saat pengujian dijalankan kembali.
 
-references/ memuat gambar asli ZIP. soda-backup.html menyimpan halaman awal; baylab-before-modules.html menyimpan versi BAYLab sebelum integrasi modul.
+Gambar referensi ZIP dan screenshot QA lama telah dihapus. Pengujian browser dapat menghasilkan screenshot baru di qa/. soda-backup.html menyimpan halaman awal; baylab-before-modules.html menyimpan versi BAYLab sebelum integrasi modul.
 
 
 ## Riwayat prototipe: login animasi bergaya Soda
@@ -70,7 +70,7 @@ Login kini memakai identitas BAYLab dengan latar violet/teal, botol laboratorium
 
 Buka index.html untuk mencoba langsung. Versi Next.js ada di frontend/src/app/page.tsx; tombol Jelajahi demo membuka public/demo.html yang berisi prototipe lama. Autentikasi organisasi belum terhubung; form tidak mengirim atau menyimpan password.
 
-Setelah mengubah komponen login atau login.css, jalankan node scripts/sync-login.mjs dari root untuk menyamakan versi HTML dan salinan demo. Setelah itu build ulang frontend. Pengujian login: node qa-login.mjs (memerlukan server frontend lokal pada port 3318). Hasil terbaru: 24 pemeriksaan browser lolos untuk versi HTML dan Next.js, termasuk viewport 320/390/768 px. Screenshot ada di qa/login-soda-*.png.
+Setelah mengubah komponen login atau login.css, jalankan node scripts/sync-login.mjs dari root untuk menyamakan versi HTML dan salinan demo. Setelah itu build ulang frontend. Pengujian login: node qa-login.mjs (memerlukan server frontend lokal pada port 3318). Hasil terbaru: 24 pemeriksaan browser lolos untuk versi HTML dan Next.js, termasuk viewport 320/390/768 px. Pengujian ulang menghasilkan screenshot di qa/login-soda-*.png.
 
 ## Koleksi parfum pada login
 

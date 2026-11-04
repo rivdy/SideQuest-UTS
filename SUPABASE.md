@@ -47,3 +47,19 @@ Email/kata sandi yang salah ditolak Supabase. User terautentikasi tanpa keanggot
 Build dan lint frontend lulus. `node scripts/check_supabase.mjs` menguji 20 kontrak HTTP dengan Auth/PostgREST tiruan terisolasi, bukan verifikasi SQL/RLS pada project asli. Audit npm produksi: 0 kerentanan dikenal saat pemeriksaan. Endpoint Auth settings project asli merespons 200, tetapi tabel baylab_organizations merespons PGRST205 sebelum setup SQL dijalankan.
 
 Contoh environment: frontend/.env.example. Domain frontend: https://side-quest-uts.vercel.app. File contoh bukan konfigurasi yang otomatis dimuat Vercel; masukkan nilainya melalui dashboard.
+
+## Ekspor data riset lokal
+
+Skrip `scripts/export_research_to_supabase.py` membuka SQLite read-only, hanya membaca organisasi dan workspace_records milik organisasi yang dipilih. Akun, password, sesi, audit pengguna, dokumen RAG dan berkas model tidak diekspor. SQL output disimpan di backend/data/exports yang diabaikan Git; jangan unggah ke repository publik.
+
+Dari root proyek di PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/export_research_to_supabase.py
+```
+
+Default organisasi lkpi dan admin tujuan admin@baylab.local. Gunakan --organization, --owner-email, --db atau --output untuk sumber/tujuan lain. Output dengan nama sama tidak ditimpa. Jalankan seluruh file SQL melalui Supabase SQL Editor setelah setup organisasi dan akun admin aktif selesai.
+
+UUID tujuan deterministik berdasarkan organisasi/jenis/ID lokal; tautan eksperimen ke formulasi dikonversi. Status arsip serta label sintetis tetap dipertahankan. Menjalankan ulang snapshot yang sama tidak membuat duplikat. Jika record tujuan dengan ID sama sudah berbeda, seluruh transaksi dibatalkan agar tidak menimpa perubahan cloud. created_by tujuan adalah admin pengimpor, bukan pemetaan penulis asli; riwayat audit lokal tidak dimigrasikan.
+
+Metrik dan titik grafik model dapat dibaca setelah impor. Artifact key/hash merupakan referensi sumber; berkas model belum diunggah atau dapat dijalankan dari cloud. Data prototipe browser/localStorage tidak termasuk database server ini.
