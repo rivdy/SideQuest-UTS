@@ -93,3 +93,7 @@ Validasi adaptasi: lint, production build, smoke HTTP, dan 32 pemeriksaan browse
 ## RAG lokal
 
 Chat AI pada aplikasi Figma kini menggunakan indeks dokumen lokal dan adapter Ollama. Panduan instalasi, batas keamanan, sumber awal, serta cara menjalankan tersedia di [RAG.md](RAG.md). Model harus selesai diunduh agar mode jawaban generatif aktif; statusnya diperlihatkan di UI. Tanpa model, hasil hanya berupa kutipan sumber hasil pencarian.
+
+## Workspace Supabase
+
+Formulasi, penilaian kandidat, pencatatan/arsip eksperimen, serta peringkat berbobot tersedia melalui Next.js dan Supabase setelah SQL workspace v2 dipasang. Panduan aktivasi dan batas fitur: [SUPABASE.md](SUPABASE.md). Impor model yang sudah dilakukan tetap dipertahankan. RAG, RDKit dan pelatihan model masih menggunakan aplikasi lokal.

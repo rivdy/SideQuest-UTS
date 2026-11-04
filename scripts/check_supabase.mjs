@@ -2,14 +2,28 @@
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { PGlite } from '../frontend/node_modules/@electric-sql/pglite/dist/index.js';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const root=process.cwd(), report=[];
 const uid='11111111-1111-4111-8111-111111111111';
-let role='admin', missingSchema=false, revoked=false;
+let role='admin', missingSchema=false, revoked=false, missingMigration=false;
 const token=()=>[Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),Buffer.from(JSON.stringify({sub:uid,exp:Math.floor(Date.now()/1000)+3600,iat:Math.floor(Date.now()/1000),aud:'authenticated',role:'authenticated'})).toString('base64url'),'mock-signature'].join('.');
 const user={id:uid,aud:'authenticated',role:'authenticated',email:'admin@example.test',email_confirmed_at:new Date().toISOString(),app_metadata:{provider:'email'},user_metadata:{},created_at:new Date().toISOString()};
+const database=new PGlite();
+await database.exec(`create role anon; create role authenticated; create schema auth;
+create table auth.users(id uuid primary key,email text,confirmed_at timestamptz);
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+grant usage on schema auth to authenticated;`);
+await database.exec(readFileSync('supabase/migrations/202611040001_organization_auth.sql','utf8'));
+await database.exec(readFileSync('supabase/migrations/202611040002_cloud_workspace.sql','utf8'));
+await database.query('insert into auth.users values($1,$2,now())',[uid,user.email]);
+await database.query("insert into public.baylab_memberships values('lkpi',$1,'QA Admin','admin',true)",[uid]);
+async function asUser(callback){
+ await database.query('update public.baylab_memberships set role=$1 where user_id=$2',[role,uid]);
+ return database.transaction(async tx=>{await tx.exec('set local role authenticated');await tx.query("select set_config('request.jwt.claim.sub',$1,true)",[uid]);return callback(tx);});
+}
 const mock=createServer(async(req,res)=>{
  const url=new URL(req.url,'http://mock'); let body='';for await(const chunk of req)body+=chunk;
  const json=(data,status=200)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(data));};
@@ -29,7 +43,24 @@ const mock=createServer(async(req,res)=>{
   }
   return json([{display_name:'QA Admin',role,active:true}]);
  }
- if(url.pathname==='/rest/v1/baylab_records')return json([]);
+ if(url.pathname.startsWith('/rest/v1/rpc/')){
+  if(missingMigration)return json({code:'PGRST202',message:'RPC missing'},404);
+  try{
+   const args=JSON.parse(body||'{}');let result;
+   if(url.pathname.endsWith('/baylab_workspace_capabilities'))result=await asUser(tx=>tx.query('select public.baylab_workspace_capabilities($1) value',[args.p_organization]));
+   else if(url.pathname.endsWith('/baylab_workspace_action'))result=await asUser(tx=>tx.query('select public.baylab_workspace_action($1,$2,$3::jsonb,$4::uuid) value',[args.p_organization,args.p_action,JSON.stringify(args.p_payload),args.p_record_id]));
+   else return json({code:'PGRST202',message:'Unknown function'},404);
+   return json(result.rows[0].value);
+  }catch(error){return json({code:error.code,message:error.message},400);}
+ }
+ if(url.pathname==='/rest/v1/baylab_records'){
+  try{
+   const org=url.searchParams.get('organization_slug')?.replace(/^eq\./,'');const kind=url.searchParams.get('kind')?.replace(/^eq\./,'')||null;
+   const offset=Number(url.searchParams.get('offset')||0),limit=Number(url.searchParams.get('limit')||1000);
+   const rows=await asUser(tx=>tx.query('select id,kind,data,created_at from public.baylab_records where organization_slug=$1 and not archived and ($2::text is null or kind=$2) order by created_at desc,id limit $3 offset $4',[org,kind,limit,offset]));
+   return json(rows.rows);
+  }catch(error){return json({code:error.code,message:error.message},400);}
+ }
  return json({message:'Unknown mock route'},404);
 });
 mock.listen(0,'127.0.0.1');await once(mock,'listening');
@@ -38,8 +69,8 @@ const port=3012,base='http://127.0.0.1:'+port;
 const child=spawn(process.execPath,[path.join(root,'frontend/node_modules/next/dist/bin/next'),'start','-H','127.0.0.1','-p',String(port)],{cwd:path.join(root,'frontend'),windowsHide:true,env:{...process.env,BAYLAB_AUTH_PROVIDER:'supabase',SUPABASE_URL:mockUrl,SUPABASE_PUBLISHABLE_KEY:'sb_publishable_mock',BAYLAB_SECURE_COOKIES:'false'},stdio:['ignore','pipe','pipe']});
 let output='';child.stdout.on('data',d=>output+=d);child.stderr.on('data',d=>output+=d);
 const jar=new Map();let csrf='';
-async function request(route,body,extra={}){
- const response=await fetch(base+'/api/'+route,{method:body?'POST':'GET',headers:{...body?{'content-type':'application/json','origin':base}:{},cookie:[...jar].map(([k,v])=>k+'='+v).join('; '),...extra},...body?{body:JSON.stringify(body)}:{}});
+async function request(route,body,extra={},method=body?'POST':'GET'){
+ const response=await fetch(base+'/api/'+route,{method,headers:{...body?{'content-type':'application/json','origin':base}:{},cookie:[...jar].map(([k,v])=>k+'='+v).join('; '),...extra},...body?{body:JSON.stringify(body)}:{}});
  for(const cookie of response.headers.getSetCookie()) {const pair=cookie.split(';')[0]; const idx=pair.indexOf('=');if(pair.slice(idx+1))jar.set(pair.slice(0,idx),pair.slice(idx+1));else jar.delete(pair.slice(0,idx));}
  return response;
 }
@@ -63,13 +94,33 @@ try{
  r=await request('workspace/overview');check('cloud overview reads actual empty records',()=>{assert.equal(r.status,200);});
  r=await request('auth/logout',{});check('missing CSRF denied',()=>assert.equal(r.status,403));
  r=await request('auth/logout',{}, {'x-csrf-token':csrf,origin:'https://evil.example'});check('cross-origin mutation denied',()=>assert.equal(r.status,403));
- r=await request('workspace/formulations',{name:'fake'},{'x-csrf-token':csrf});check('unimplemented cloud writes explicitly blocked',()=>assert.equal(r.status,503));
+ r=await request('workspace/formulations',{name:'fake'},{'x-csrf-token':csrf});check('invalid cloud payload rejected by database',()=>assert.equal(r.status,422));
+ missingMigration=true;r=await request('workspace/capabilities');const notReady=await r.json();check('missing migration keeps UI read only',()=>assert.equal(notReady.workspace_ready,false));missingMigration=false;
+ r=await request('workspace/capabilities');const capability=await r.json();check('installed migration activates workspace',()=>assert.equal(capability.workspace_ready,true));
+ const formulation={name:'HTTP candidate A',data_origin:'synthetic',ingredients:[{name:'Water',role:'water',percent:100}]};
+ const headers={'x-csrf-token':csrf};
+ r=await request('workspace/formulations',formulation,headers);const formA=await r.json();check('formulation POST persists actual SQL record',()=>{assert.equal(r.status,201);assert.ok(formA.id);});
+ r=await request('workspace/formulations',{...formulation,name:'HTTP candidate B'},headers);const formB=await r.json();
+ const assessment={comparison_protocol:'QA-HTTP',oxidation:{score:80,source_ref:'QA fixture',rationale:'Synthetic score'}};
+ r=await request('workspace/formulations/'+formA.id+'/assessment',assessment,headers,'PUT');check('assessment PUT persists evidence',()=>assert.equal(r.status,200));
+ r=await request('workspace/formulations/'+formB.id+'/assessment',{...assessment,oxidation:{...assessment.oxidation,score:40}},headers,'PUT');
+ r=await request('workspace/rank',{formulation_ids:[formA.id,formB.id],comparison_protocol:'QA-HTTP',weights:{oxidation:100,solubility:0,compatibility:0,temperature:0,aroma:0}},headers);const ranks=await r.json();check('rank HTTP returns SQL weighted results',()=>{assert.equal(r.status,200);assert.deepEqual(ranks.ranked.map(x=>x.score),[80,40]);});
+ const experiment={formulation_id:formA.id,batch_id:'HTTP-01',protocol:'QA-HTTP',source_ref:'Synthetic fixture',measured_on:'2026-11-04',initial_h2o2:3,final_h2o2:2.7,ph:4,temperature_c:25,duration_days:7,homogeneous:true,data_origin:'synthetic'};
+ r=await request('workspace/experiments',experiment,headers);const trial=await r.json();check('experiment POST calculates retention',()=>{assert.equal(r.status,201);assert.equal(trial.retention_pct,90);});
+ r=await request('workspace/experiments',experiment,headers);check('duplicate experiment maps to HTTP 409',()=>assert.equal(r.status,409));
+ r=await request('workspace/experiments/'+trial.id,undefined,headers,'DELETE');check('archive DELETE succeeds',()=>assert.equal(r.status,200));
+ r=await request('workspace/experiments');const trials=await r.json();check('archived experiment excluded from list',()=>assert.equal(trials.length,0));
+ role='viewer';r=await request('workspace/formulations',formulation,headers);check('viewer mutation blocked at HTTP layer',()=>assert.equal(r.status,403));role='admin';
  r=await request('rag/status');check('local-only AI explicitly unavailable',()=>assert.equal(r.status,503));
  role='viewer';r=await request('auth/users');check('current membership role rechecked',()=>assert.equal(r.status,403));role='admin';
  revoked=true;r=await request('workspace/overview');check('revoked identity denied',()=>assert.equal(r.status,401));revoked=false;
  r=await login();csrf=(await r.json()).csrf_token;
  r=await request('auth/logout',{}, {'x-csrf-token':csrf});check('valid logout',()=>assert.equal(r.status,200));
  r=await request('auth/session');check('logout removes session',()=>assert.equal(r.status,401));
- mkdirSync(path.join(root,'qa'),{recursive:true});writeFileSync(path.join(root,'qa/supabase-contract-report.json'),JSON.stringify({scope:'mock Supabase HTTP; not a live SQL/RLS verification',report},null,2));
+ if(process.argv.includes('--browser')){
+  const browser=spawn(process.execPath,['qa-cloud-workspace.mjs'],{cwd:root,windowsHide:true,stdio:'inherit'});
+  const [exitCode]=await once(browser,'exit');assert.equal(exitCode,0,'Browser checks failed');
+ }
+ mkdirSync(path.join(root,'qa'),{recursive:true});writeFileSync(path.join(root,'qa/supabase-contract-report.json'),JSON.stringify({scope:'Mock Auth/PostgREST transport with actual PostgreSQL RPC via PGlite',report},null,2));
  console.log(JSON.stringify({passed:report.length,scope:'isolated HTTP contracts'}));
-}finally{child.kill();await once(child,'exit').catch(()=>{});mock.closeAllConnections();await new Promise(resolve=>mock.close(resolve));}
+}finally{child.kill();await once(child,'exit').catch(()=>{});mock.closeAllConnections();await new Promise(resolve=>mock.close(resolve));await database.close();}

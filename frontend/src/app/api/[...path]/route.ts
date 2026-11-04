@@ -2,6 +2,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { action, capabilities, records, WorkspaceError } from "@/lib/supabase/workspace";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,7 +52,7 @@ async function membership(client: Awaited<ReturnType<typeof createClient>>, user
 async function handle(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const path = (await context.params).path.join("/");
   const cloud = process.env.BAYLAB_AUTH_PROVIDER === "supabase";
-  if ((path === "auth/config" || path === "cloud-config") && request.method === "GET") return response({ provider: cloud ? "supabase" : "local", workspace: cloud ? "read_only" : "full" });
+  if ((path === "auth/config" || path === "cloud-config") && request.method === "GET") return response({ provider: cloud ? "supabase" : "local", workspace: cloud ? "cloud" : "full" });
   if (!cloud) return response({ detail: "Backend lokal tidak tersedia pada rute ini." }, 503);
   try {
     const mutation = !["GET", "HEAD"].includes(request.method);
@@ -118,14 +119,36 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
       if (error) throw new ApiError(503, "Daftar anggota belum dapat dimuat.");
       return response((data || []).map(row => ({ name: row.display_name, role: row.role, email: "Dikelola melalui Supabase Auth" })));
     }
+    if (path === "workspace/capabilities" && request.method === "GET") {
+      return response(await capabilities(client, slug));
+    }
+    const assessmentMatch = path.match(/^workspace\/formulations\/([a-f0-9-]{36})\/assessment$/i);
+    const archiveMatch = path.match(/^workspace\/experiments\/([a-f0-9-]{36})$/i);
+    const operations: Record<string, { name: string; fields: string[]; status: number }> = {
+      "workspace/formulations": { name: "create_formulation", fields: ["name","aroma_profile","ingredients","notes","data_origin"], status: 201 },
+      "workspace/experiments": { name: "create_experiment", fields: ["formulation_id","batch_id","protocol","source_ref","measured_on","initial_h2o2","final_h2o2","ph","temperature_c","duration_days","homogeneous","aroma_intensity","notes","data_origin","confirmed_actual"], status: 201 },
+      "workspace/rank": { name: "rank", fields: ["formulation_ids","weights","comparison_protocol"], status: 200 },
+    };
+    if (request.method === "POST" && operations[path]) {
+      const operation = operations[path];
+      if (operation.name !== "rank" && !["admin","formulator"].includes(profile.role)) throw new ApiError(403, "Akun pembaca tidak dapat mengubah data.");
+      const body = await readBody(request, operation.fields);
+      return response(await action(client, slug, operation.name, body), operation.status);
+    }
+    if (request.method === "PUT" && assessmentMatch) {
+      if (!["admin","formulator"].includes(profile.role)) throw new ApiError(403, "Akun pembaca tidak dapat mengubah data.");
+      const body = await readBody(request, ["comparison_protocol","oxidation","solubility","compatibility","temperature","aroma"]);
+      return response(await action(client, slug, "assess_formulation", body, assessmentMatch[1]));
+    }
+    if (request.method === "DELETE" && archiveMatch) {
+      if (!["admin","formulator"].includes(profile.role)) throw new ApiError(403, "Akun pembaca tidak dapat mengubah data.");
+      return response(await action(client, slug, "archive_experiment", {}, archiveMatch[1]));
+    }
     if (path.startsWith("workspace/") && request.method === "GET") {
       if (path === "workspace/model/status") return response({ can_train: false, eligible_rows: 0, groups: 0, message: "Pelatihan model belum terhubung pada deployment Supabase. Gunakan aplikasi lokal." });
       const kinds: Record<string, string> = { "workspace/formulations": "formulation", "workspace/experiments": "experiment", "workspace/model/runs": "model_run" };
       if (path === "workspace/overview" || kinds[path]) {
-        let query = client.from("baylab_records").select("id,kind,data,created_at").eq("organization_slug", slug).eq("archived", false).order("created_at", { ascending: false });
-        if (kinds[path]) query = query.eq("kind", kinds[path]);
-        const { data, error } = await query;
-        if (error) throw new ApiError(503, "Tabel workspace Supabase belum siap. Jalankan SQL setup BAYLab.");
+        const data = await records(client, slug, kinds[path]);
         if (path === "workspace/overview") return response({
           formulations: data.filter(r => r.kind === "formulation").length,
           experiments: data.filter(r => r.kind === "experiment").length,
@@ -137,10 +160,10 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
       }
     }
     if (path.startsWith("rag/") || path.startsWith("chemistry/")) throw new ApiError(503, "Layanan RAG/RDKit masih tersedia pada aplikasi lokal; belum dihubungkan ke deployment Supabase.");
-    if (path.startsWith("workspace/") || path === "auth/users") throw new ApiError(503, "Integrasi cloud saat ini menyediakan login dan pembacaan data. Penulisan data serta pengelolaan anggota belum diaktifkan; gunakan aplikasi lokal atau administrator Supabase.");
+    if (path.startsWith("workspace/") || path === "auth/users") throw new ApiError(503, "Operasi ini belum tersedia di cloud. Pelatihan model tetap lokal; pengelolaan anggota dilakukan oleh administrator Supabase.");
     throw new ApiError(404, "Endpoint tidak tersedia.");
   } catch (error) {
-    if (error instanceof ApiError) return response({ detail: error.message }, error.status);
+    if (error instanceof ApiError || error instanceof WorkspaceError) return response({ detail: error.message }, error.status);
     return response({ detail: "Supabase belum dapat dihubungi atau konfigurasi belum lengkap. Periksa URL dan Publishable Key di environment deployment." }, 503);
   }
 }

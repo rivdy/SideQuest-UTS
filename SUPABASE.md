@@ -1,6 +1,6 @@
 # Menghubungkan login BAYLab ke Supabase
 
-Integrasi ini menambahkan login Supabase melalui server Next.js di Vercel. Akun dan data lokal tidak otomatis dipindahkan. Workspace cloud saat ini hanya dapat membaca data organisasi; penulisan formulasi/eksperimen, ranking, unggah dokumen, pelatihan dan layanan kimia masih menggunakan aplikasi lokal. Jangan menganggap semua modul sudah online.
+Workspace cloud menyediakan login organisasi, pembuatan formulasi, penyimpanan penilaian bersumber, pencatatan dan pengarsipan eksperimen, serta pemeringkatan berbobot melalui Next.js dan Supabase. Aktifkan migrasi v2 di bawah sebelum memakai fitur penulisan. Data lokal hanya dipindahkan lewat impor yang dijalankan pengguna; RAG, RDKit dan pelatihan model masih lokal.
 
 ## 1. Environment frontend dan Vercel
 
@@ -26,7 +26,25 @@ Buka Authentication > Users > Add user. Buat akun dengan email milik Anda dan ka
 
 Buka Authentication > URL Configuration dan isi Site URL dengan URL Vercel. Untuk alur login password ini belum ada callback email. Undangan, signup publik, dan reset email belum diimplementasikan; buat akun melalui administrator. Jika tidak memakai signup publik, nonaktifkan Allow new users to sign up di konfigurasi Auth.
 
-## 4. Deploy dan periksa
+## 4. Aktifkan workspace cloud v2
+
+Untuk project yang sudah memakai login dan sudah mengimpor data, jalankan seluruh isi `supabase/migrations/202611040002_cloud_workspace.sql` lewat SQL Editor. Tidak perlu mengulang bootstrap akun atau impor data. Migrasi v2 mempertahankan record yang ada dan dapat dijalankan ulang. Pada project baru, jalankan migrasi organisasi v1 terlebih dahulu.
+
+Fitur yang aktif setelah SQL dan kode terbaru terpasang:
+
+- Admin/formulator membuat kandidat dengan 1?30 bahan dan total 100% massa.
+- Penilaian lima kriteria wajib mempunyai skor, sumber, alasan dan protokol pembandingan.
+- Anggota termasuk viewer dapat menghitung peringkat. Kandidat dengan bukti belum lengkap/protokol berbeda ditampilkan tanpa peringkat; data nyata dan ilustrasi tidak dicampur.
+- Admin/formulator mencatat eksperimen, termasuk hasil gagal. Retensi dan snapshot komposisi dihitung oleh database. Konfirmasi wajib untuk data lab nyata; formulasi ilustrasi tidak boleh menghasilkan catatan nyata.
+- Pengukuran batch/protokol/hari yang sama ditolak. Arsip menyembunyikan catatan dari daftar aktif, tanpa menghapus record atau jejak audit.
+
+Tidak perlu Secret Key, server Render atau perubahan environment untuk ketiga fitur ini. Koneksi menggunakan sesi Supabase milik pengguna. Privilege menulis langsung ke tabel tetap ditutup; fungsi RPC memeriksa anggota aktif, peran, organisasi dan payload sebelum mutasi. Audit disimpan di baylab_audit_events dan hanya dapat dibaca admin organisasinya.
+
+Frontend memeriksa `/api/workspace/capabilities` setelah login. Tanpa migrasi v2, form tetap dinonaktifkan dan banner menjelaskan aktivasi SQL. Setelah migrasi, `workspace_ready` bernilai true. `/api/auth/config` menampilkan `workspace: cloud`, tetapi kesiapan SQL tetap diperiksa melalui endpoint capabilities.
+
+Hash komposisi kandidat baru menggunakan normalisasi PostgreSQL; hash kandidat yang diimpor dipertahankan. Sebelum penggabungan data lokal/cloud untuk pelatihan model mendatang, format fingerprint perlu diseragamkan agar kelompok formulasi ekuivalen tidak terpisah.
+
+## 5. Deploy dan periksa
 
 Push perubahan kode ke GitHub, lalu deploy ulang Vercel dengan Root Directory frontend. Environment baru berlaku pada build/deployment baru. Buka /api/auth/config: harus menampilkan provider supabase. Buka /baylab-figma.html#login, gunakan kode lkpi dan akun Supabase yang baru dibuat.
 
@@ -34,17 +52,23 @@ Email/kata sandi yang salah ditolak Supabase. User terautentikasi tanpa keanggot
 
 ## Batas tahap koneksi
 
-- Hanya login, sesi, logout, perubahan password, profil organisasi, daftar anggota admin dan pembacaan record yang diimplementasikan di cloud.
+- Cloud mendukung akun, profil, pembacaan record, formulasi, penilaian, eksperimen, arsip dan ranking. Pembuatan anggota dari aplikasi belum diaktifkan.
 - Write privilege tabel dicabut dari anon/authenticated. RLS dan UI tidak menerima peran dari metadata yang dapat diedit pengguna.
-- Migrasi lokal ke cloud, API mutasi dan audit cloud belum dibuat. Data aktual/model lokal tidak diunggah.
-- RAG, RDKit, model dan dokumen tetap lokal. UI cloud menjelaskan fitur yang belum tersambung dan tidak memakai angka contoh sebagai data cloud.
+- Skrip ekspor riset menyediakan migrasi record lokal; API mutasi dan audit cloud tersedia setelah migrasi v2. Data dan berkas lokal tidak diunggah otomatis.
+- RAG, RDKit, pelatihan dan berkas dokumen/model tetap lokal. Metrik model yang diimpor tetap dapat dibaca di cloud; tidak ada pelatihan model otomatis di Supabase.
 - Perubahan password melakukan global sign-out; token akses Supabase yang sudah diterbitkan dapat berlaku sampai kedaluwarsa sesuai kebijakan Supabase.
 - Rate limiting login mengikuti Supabase Auth; proxy Vercel dapat menggabungkan IP sumber, sehingga perlu pengaturan rate limit/WAF lebih lanjut sebelum skala publik.
 - SQL dan akun nyata belum dapat diverifikasi sampai administrator menjalankan setup. Publishable Key bukan akses SQL Editor.
 
 ## Verifikasi implementasi
 
-Build dan lint frontend lulus. `node scripts/check_supabase.mjs` menguji 20 kontrak HTTP dengan Auth/PostgREST tiruan terisolasi, bukan verifikasi SQL/RLS pada project asli. Audit npm produksi: 0 kerentanan dikenal saat pemeriksaan. Endpoint Auth settings project asli merespons 200, tetapi tabel baylab_organizations merespons PGRST205 sebelum setup SQL dijalankan.
+Build dan lint frontend lulus. Verifikasi v2:
+
+- `node scripts/check_cloud_workspace.mjs`: 35 pemeriksaan fungsi PostgreSQL dan RLS memakai PGlite, termasuk akses lintas organisasi dan payload tidak valid.
+- `node scripts/check_supabase.mjs --browser`: 30 pemeriksaan API Next.js dan 13 pemeriksaan browser. Transport Auth/PostgREST ditiru, tetapi operasi data menjalankan SQL PostgreSQL yang sebenarnya di database uji terisolasi.
+- Pemeriksaan browser mencakup penyimpanan, penilaian, ranking, eksperimen, reload sesi/data dan tampilan 390 px. Tidak menghasilkan PNG baru.
+
+Semua fixture sintetis hanya ada di database pengujian. Hasil ini tidak menyatakan migrasi v2 sudah dijalankan di Supabase pengguna; aktivasi project asli tetap melalui SQL Editor. Laporan tersimpan di qa/cloud-workspace-sql-report.json, qa/supabase-contract-report.json dan qa/cloud-workspace-browser-report.json.
 
 Contoh environment: frontend/.env.example. Domain frontend: https://side-quest-uts.vercel.app. File contoh bukan konfigurasi yang otomatis dimuat Vercel; masukkan nilainya melalui dashboard.
 

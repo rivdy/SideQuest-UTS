@@ -22,3 +22,7 @@ Belum ada SSO/MFA, verifikasi email, reset email, manajemen kunci, pengujian res
 Ollama tetap loopback. Validasi kutipan RAG tidak membuktikan klaim benar secara ilmiah. Model native hanya dihasilkan server, tidak menerima unggahan pickle/model pengguna. Data pelatihan nyata merupakan pernyataan pengguna, belum diverifikasi laboratorium.
 
 Audit npm terdahulu menemukan 16 kerentanan moderate pada rantai tooling ESLint/minimatch; tidak ada high/critical saat pemeriksaan tersebut. Periksa ulang sebelum rilis. Checklist ini bukan sertifikasi keamanan.
+
+## Workspace Supabase v2
+
+Cloud memakai Supabase Auth dengan cookie server dan CSRF pada Next.js. Mutasi hanya melalui RPC yang memeriksa auth.uid(), keanggotaan aktif dan peran di database. Fungsi SECURITY DEFINER memiliki search_path kosong, referensi tabel berskema eksplisit dan grant execute hanya untuk authenticated. Validasi dilakukan kembali di SQL sehingga pemanggilan RPC langsung tidak melewati otorisasi/validasi. Akses tulis tabel langsung tetap dicabut; viewer hanya membaca/memeringkatkan. Audit mutasi tersimpan secara atomik dan pembacaannya dibatasi admin organisasi. Uji PostgreSQL lokal mencakup pemanggilan RPC langsung, RLS, penolakan tampering dan organisasi lain; audit platform Supabase/Vercel produksi tetap di luar cakupan tes lokal.
