@@ -11,10 +11,41 @@
   const input=(name,label,type='text',extra='')=>'<label class="field">'+safe(label)+'<input name="'+name+'" type="'+type+'" '+extra+'></label>';
   const originTag=o=>badge(o==='synthetic'?'Data contoh ilustratif':'Data organisasi',o==='synthetic'?'amber':'purple');
   const labHead=(t,d,actions='')=>head(t,d,actions).replace(badge('Data contoh ilustratif','amber'),badge('Tersimpan di server','purple'));
+  const sessionIdentity=user=>user?JSON.stringify([user.email,user.organization?.slug]):'';
+  let sessionRefresh=null;
+  async function refreshedSession(){
+    if(!sessionRefresh)sessionRefresh=(async()=>{
+      const response=await fetch('/api/auth/session',{credentials:'same-origin',cache:'no-store'});
+      return response.ok?await response.json():null;
+    })().finally(()=>{sessionRefresh=null;});
+    return sessionRefresh;
+  }
   window.baylabFetch=async(url,options={})=>{
     const headers=new Headers(options.headers||{});
-    if(!['GET','HEAD'].includes((options.method||'GET').toUpperCase())&&lab.csrf)headers.set('X-CSRF-Token',lab.csrf);
-    const response=await fetch(url,{...options,headers,credentials:'same-origin'});
+    const mutation=!['GET','HEAD'].includes((options.method||'GET').toUpperCase());
+    const identity=sessionIdentity(lab.user);
+    if(mutation&&lab.csrf)headers.set('X-CSRF-Token',lab.csrf);
+    const send=()=>fetch(url,{...options,headers,credentials:'same-origin'});
+    let response=await send();
+    // Only replay an explicit CSRF rejection: the server has not performed the mutation.
+    // Never retry network failures or generic 403 responses, which may have other causes.
+    if(mutation&&identity&&response.status===403){
+      let error;try{error=await response.clone().json();}catch{error=null;}
+      if(error?.code==='csrf_invalid'||error?.detail==='Token CSRF tidak valid. Muat ulang halaman.'){
+        let session;try{session=await refreshedSession();}catch{session=null;}
+        if(session?.user&&session.csrf_token){
+          if(sessionIdentity(session.user)!==identity){
+            lab.user=null;lab.csrf='';lab.forms=[];lab.trials=[];lab.runs=[];lab.users=[];lab.selected.clear();lab.rank=null;lab.assessId='';
+            lab.error='Akun atau organisasi berubah di tab lain. Masuk kembali sebelum menyimpan data.';
+            render();
+            return new Response(JSON.stringify({detail:lab.error}),{status:401,headers:{'Content-Type':'application/json'}});
+          }
+          lab.csrf=session.csrf_token;lab.user=session.user;
+          headers.set('X-CSRF-Token',lab.csrf);
+          response=await send();
+        }
+      }
+    }
     if(response.status===401&&!String(url).endsWith('/login')){const hadUser=!!lab.user;lab.user=null;lab.csrf='';if(hadUser)lab.error='Sesi berakhir. Masuk kembali.';render();}
     return response;
   };

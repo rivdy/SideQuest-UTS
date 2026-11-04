@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const ORG = "baylab_cloud_org";
 const CSRF = "baylab_cloud_csrf";
 class ApiError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  constructor(public status: number, message: string, public code?: string) { super(message); }
 }
 const response = (body: unknown, status = 200) => NextResponse.json(body, {
   status, headers: { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" },
@@ -86,7 +86,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
     if (identityError || !user) throw new ApiError(401, "Silakan masuk dengan akun Supabase organisasi.");
     if (mutation) {
       const expected = store.get(CSRF)?.value || ""; const supplied = request.headers.get("x-csrf-token") || "";
-      if (!expected || expected.length !== supplied.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))) throw new ApiError(403, "Token CSRF tidak valid. Muat ulang halaman.");
+      if (!expected || expected.length !== supplied.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))) throw new ApiError(403, "Token CSRF tidak valid. Muat ulang halaman.", "csrf_invalid");
     }
     if (path === "auth/logout" && request.method === "POST") {
       const { error } = await client.auth.signOut({ scope: "local" });
@@ -163,7 +163,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
     if (path.startsWith("workspace/") || path === "auth/users") throw new ApiError(503, "Operasi ini belum tersedia di cloud. Pelatihan model tetap lokal; pengelolaan anggota dilakukan oleh administrator Supabase.");
     throw new ApiError(404, "Endpoint tidak tersedia.");
   } catch (error) {
-    if (error instanceof ApiError || error instanceof WorkspaceError) return response({ detail: error.message }, error.status);
+    if (error instanceof ApiError || error instanceof WorkspaceError) return response({ detail: error.message, ...(error instanceof ApiError && error.code ? { code: error.code } : {}) }, error.status);
     return response({ detail: "Supabase belum dapat dihubungi atau konfigurasi belum lengkap. Periksa URL dan Publishable Key di environment deployment." }, 503);
   }
 }

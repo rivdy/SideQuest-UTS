@@ -26,6 +26,8 @@ try {
  await evaluate(`{const f=document.querySelector('#org-login');f.elements.organization.value='lkpi';f.elements.email.value='admin@example.test';f.elements.password.value='Valid-Test-Password-123';f.requestSubmit();}`);
  await until("!!document.querySelector('.main') && !document.querySelector('.main > [role=status]')");
  await check('cloud activation status reflects database capability',"document.body.innerText.includes('Formulasi, penilaian kandidat, dan eksperimen tersimpan di Supabase') && !document.body.innerText.includes('data lokal belum dipindahkan')");
+ await call('Network.enable');
+ await call('Network.setCookie',{name:'baylab_cloud_csrf',value:'a'.repeat(64),url:'http://127.0.0.1:3012/',httpOnly:true,sameSite:'Strict',path:'/'});
  for(const name of ['UI Candidate A','UI Candidate B']){
   await evaluate("go('formulasi')");
   await check('formulation form enabled '+name,"!!document.querySelector('#lab-formulation')");
@@ -33,6 +35,7 @@ try {
   await until(`document.body.innerText.includes(${JSON.stringify(name)}) && !!document.querySelector('#lab-rank') && !document.querySelector('.main > [role=status]')`);
   await check('saved formulation visible '+name,"!document.querySelector('.main > [role=alert]')");
  }
+ await check('stale CSRF recovers without duplicating formulation',"baylabFetch('/api/workspace/formulations').then(r=>r.json()).then(x=>x.filter(f=>f.name==='UI Candidate A').length===1)");
  for(const [name,score] of [['UI Candidate A',90],['UI Candidate B',40]]){
   await evaluate(`{const row=[...document.querySelectorAll('.lab-candidate')].find(x=>x.innerText.includes(${JSON.stringify(name)}));row.querySelector('button').click();}`);
   await evaluate(`{const f=document.querySelector('.lab-criterion').closest('form');f.elements.comparison_protocol.value='QA-UI';for(const k of ['oxidation','solubility','compatibility','temperature','aroma']){f.elements[k].value=${JSON.stringify(String(score))};f.elements[k+'_source'].value='QA synthetic fixture';f.elements[k+'_rationale'].value='Synthetic UI test score';}f.requestSubmit();}`);
@@ -55,6 +58,11 @@ try {
  await check('mobile formulation page fits',"document.documentElement.scrollWidth<=390");
  await evaluate("go('input')");
  await check('mobile experiment page fits',"document.documentElement.scrollWidth<=390");
+
+ await check('generic forbidden response is not retried',`(async()=>{const original=window.fetch;let calls=0;window.fetch=async()=>{calls++;return new Response(JSON.stringify({detail:'Role denied'}),{status:403,headers:{'Content-Type':'application/json'}})};try{const r=await baylabFetch('/api/workspace/formulations',{method:'POST',body:'{}'});return r.status===403&&calls===1;}finally{window.fetch=original;}})()`);
+ await check('persistent CSRF mismatch retries at most once',`(async()=>{const original=window.fetch;let writes=0;window.fetch=async(url,options)=>{if(String(url)==='/api/auth/session')return original(url,options);writes++;return new Response(JSON.stringify({detail:'Token CSRF tidak valid. Muat ulang halaman.',code:'csrf_invalid'}),{status:403,headers:{'Content-Type':'application/json'}})};try{const r=await baylabFetch('/api/workspace/formulations',{method:'POST',body:'{}'});return r.status===403&&writes===2;}finally{window.fetch=original;}})()`);
+ await call('Network.setCookie',{name:'baylab_cloud_csrf',value:'b'.repeat(64),url:'http://127.0.0.1:3012/',httpOnly:true,sameSite:'Strict',path:'/'});
+ await check('changed organization blocks mutation replay',`(async()=>{const original=window.fetch;let writes=0;window.fetch=async(url,options)=>{const r=await original(url,options);if(String(url)==='/api/auth/session'){const data=await r.json();data.user.organization.slug='other';return new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});}if(options?.method==='POST')writes++;return r;};try{const r=await baylabFetch('/api/workspace/formulations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Must not save',ingredients:[{name:'Water',role:'water',percent:100}],data_origin:'synthetic'})});return r.status===401&&writes===1&&document.body.innerText.includes('Akun atau organisasi berubah');}finally{window.fetch=original;}})()`);
  await check('no browser runtime exceptions',"true");
  const errors=events.filter(x=>x.method==='Runtime.exceptionThrown');if(errors.length)failures.push('runtime exceptions: '+JSON.stringify(errors));
  fs.writeFileSync(path.join(out,'cloud-workspace-browser-report.json'),JSON.stringify({report,failures},null,2));

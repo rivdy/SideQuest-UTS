@@ -92,7 +92,7 @@ try{
  check('auth cookies HttpOnly SameSite Strict',()=>{const all=r.headers.getSetCookie();assert.ok(all.length>=3);assert.ok(all.every(x=>/httponly/i.test(x)&&/samesite=strict/i.test(x)));});
  r=await request('auth/session');check('authenticated response never cached',()=>{assert.equal(r.status,200);assert.match(r.headers.get('cache-control'),/no-store/);});
  r=await request('workspace/overview');check('cloud overview reads actual empty records',()=>{assert.equal(r.status,200);});
- r=await request('auth/logout',{});check('missing CSRF denied',()=>assert.equal(r.status,403));
+ r=await request('auth/logout',{});const csrfError=await r.json();check('missing CSRF denied with specific recovery code',()=>{assert.equal(r.status,403);assert.equal(csrfError.code,'csrf_invalid');});
  r=await request('auth/logout',{}, {'x-csrf-token':csrf,origin:'https://evil.example'});check('cross-origin mutation denied',()=>assert.equal(r.status,403));
  r=await request('workspace/formulations',{name:'fake'},{'x-csrf-token':csrf});check('invalid cloud payload rejected by database',()=>assert.equal(r.status,422));
  missingMigration=true;r=await request('workspace/capabilities');const notReady=await r.json();check('missing migration keeps UI read only',()=>assert.equal(notReady.workspace_ready,false));missingMigration=false;
