@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Luaran F-01 · BAYLab AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Skema formulasi, Bill of Materials, HPP awal, dan protokol foto/video uji sampel formula disinfektan F-01 BAYLab AI untuk tantangan LKPI-01.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a single reading column of technical exhibits on the landing page's indigo; citrus marks the one thing to notice in each. */
+:root{
+  color-scheme:dark;
+  --ultra:#2a1c90;
+  --ultra-deep:#1a1064;
+  --ultra-lift:#3a29bd;
+  --mist:#f3f0ff;
+  --mist-dim:#c5bdf2;
+  --oxygen:#ff5a45;
+  --citrus:#ffc23d;
+  --ink:#170e5c;
+  --line:#ffffff2e;
+  --panel:#1a106499;
+  --good:#8cf0bd;
+  --display:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;
+  --body:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --gutter:clamp(16px,4vw,56px);
+}
+*{box-sizing:border-box}
+body{background:var(--ultra);color:var(--mist);font:400 16.5px/1.6 var(--body);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ultra-deep)}
+a{color:inherit}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:3px solid var(--citrus);outline-offset:3px;border-radius:4px}
+.wrap{padding-left:max(var(--gutter),env(safe-area-inset-left,0px));padding-right:max(var(--gutter),env(safe-area-inset-right,0px))}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--citrus)}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:16px;background:#1a1064f2;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+.brand{display:flex;align-items:center;gap:10px;font:700 20px/1 var(--display);letter-spacing:-.02em;text-decoration:none}
+.brand svg{width:24px;height:24px;fill:var(--citrus)}
+.top nav{display:flex;align-items:center;gap:22px;font-size:14.5px;font-weight:500;flex-wrap:wrap;justify-content:flex-end}
+.top nav a{text-decoration:none}
+.top nav a:not(.go):hover{text-decoration:underline;text-underline-offset:4px}
+.go{display:inline-flex;align-items:center;gap:10px;background:var(--mist);color:var(--ink);padding:10px 16px;border-radius:40px;font-weight:600;text-decoration:none}
+.go:hover{background:var(--citrus)}
+@media(max-width:860px){.top nav a:not(.go){display:none}}
+
+main{max-width:1120px;margin:0 auto;min-width:0}
+/* Grid tracks must not grow to a wide table or diagram; those scroll inside their own box. */
+.hero,section.block{grid-template-columns:minmax(0,1fr)}
+.hero{padding-block:clamp(56px,10vh,120px) 40px;display:grid;gap:18px}
+.hero h1{font:800 clamp(2.6rem,7vw,5.6rem)/.95 var(--display);font-variation-settings:'wdth' 82;letter-spacing:-.03em;max-width:14ch;text-wrap:balance}
+.hero h1 em{font-style:normal;color:var(--citrus)}
+.hero p{max-width:40rem;color:var(--mist)}
+.asof{font:500 13px var(--mono);color:var(--mist-dim)}
+
+section.block{padding-block:56px;border-top:1px solid var(--line);display:grid;gap:18px}
+section.block h2{font:700 clamp(1.8rem,3.6vw,2.8rem)/1.05 var(--display);font-variation-settings:'wdth' 85;letter-spacing:-.02em;max-width:24ch;text-wrap:balance}
+section.block>p{max-width:46rem}
+.fine{color:var(--mist-dim);font-size:14.5px;max-width:46rem}
+
+.status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.status article{border:1px solid var(--line);border-radius:8px;padding:18px;display:grid;gap:8px;align-content:start;min-width:0;background:var(--panel)}
+.status h3{font:600 17px/1.3 var(--body)}
+.status p{color:var(--mist-dim);font-size:14.5px}
+.tag{justify-self:start;font:500 12px/1 var(--mono);padding:6px 9px;border-radius:30px;white-space:nowrap}
+.tag.done{background:#3bd68a2b;color:var(--good)}
+.tag.draft{background:#ffc23d2b;color:var(--citrus)}
+.tag.wait{background:#ff5a4530;color:#ffb2a8}
+@media(max-width:700px){.status{grid-template-columns:minmax(0,1fr)}}
+
+.figure{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:clamp(12px,2.5vw,28px);overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:560px;max-width:860px;margin:0 auto;height:auto}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:14.5px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid #ffffff14;vertical-align:top}
+th{font:500 12.5px/1.3 var(--mono);letter-spacing:.03em;color:var(--mist-dim);text-transform:uppercase;background:#ffffff0a}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.mono{white-space:nowrap;font-size:13px}
+tr.aroma td:first-child{border-left:3px solid var(--citrus)}
+tfoot td{font-weight:700;border-bottom:0;border-top:1px solid var(--line)}
+td small{display:block;color:var(--mist-dim);font-size:12.5px}
+
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
+.kpis div{padding:20px 18px 20px 0;border-right:1px solid var(--line);min-width:0}
+.kpis div+div{padding-left:18px}.kpis div:last-child{border-right:0}
+.kpis strong{display:block;font:700 clamp(1.9rem,4vw,3.2rem)/1 var(--display);font-variation-settings:'wdth' 80;letter-spacing:-.02em;color:var(--citrus);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpis span{display:block;margin-top:8px;font-size:14.5px}
+@media(max-width:700px){.kpis{grid-template-columns:minmax(0,1fr)}.kpis div{border-right:0;border-bottom:1px solid var(--line);padding-left:0!important}}
+
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.stack i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--mist-dim);list-style:none;padding:0;margin:0}
+.legend li{display:flex;align-items:center;gap:8px}
+.legend b{width:12px;height:12px;border-radius:3px;display:inline-block}
+.c1{background:var(--citrus)}.c2{background:#a99bff}.c3{background:#6fa8ff}.c4{background:#8cf0bd}.c5{background:#ffb2a8}.c6{background:#f3f0ff}
+
+ol.steps{margin:0;padding-left:1.3em;display:grid;gap:10px;max-width:46rem}
+ol.steps b{color:var(--mist)}
+code{font:500 13px var(--mono);color:#ffb2a8;overflow-wrap:anywhere}
+.empty{border:1px dashed var(--line);border-radius:8px;padding:28px;display:grid;gap:8px;place-items:start;background:#ffffff06}
+.empty strong{font:600 17px var(--body)}
+.empty p{color:var(--mist-dim);max-width:40rem;font-size:14.5px}
+
+ul.src{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14.5px;color:var(--mist-dim)}
+ul.src a{color:var(--mist)}
+footer{padding-block:28px;border-top:1px solid var(--line);font-size:14px;color:var(--mist-dim);display:flex;flex-wrap:wrap;gap:6px 26px;justify-content:space-between;max-width:1120px;margin:0 auto}
+</style>
+</head>
+<body>
+<header class="top wrap">
+  <a class="brand" href="landing.html" aria-label="BAYLab AI, ke halaman utama"><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="5.5" r="4.5"/><circle cx="13" cy="20.5" r="4.5"/><circle cx="5.5" cy="13" r="4.5"/><circle cx="20.5" cy="13" r="4.5"/></svg>BAYLab AI</a>
+  <nav aria-label="Navigasi luaran"><a href="#status">Status</a><a href="#skema">Skema</a><a href="#bom">BOM</a><a href="#hpp">HPP</a><a href="#foto">Foto &amp; video</a><a class="go" href="baylab-figma.html">Coba demo</a></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero" aria-labelledby="judul">
+    <p class="eyebrow">Luaran klaster Farmasi/Alkes · LKPI-01</p>
+    <h1 id="judul">Formula F-01, dari <em>skema</em> sampai HPP.</h1>
+    <p>F-01 adalah disinfektan ruangan H<sub>2</sub>O<sub>2</sub> 3% dengan aroma tahan oksidasi yang dirancang untuk PT Likuid Pharmalab Indonesia. Halaman ini memuat skema formulasi, Bill of Materials, kalkulasi HPP awal, dan protokol dokumentasi uji sampel. Aroma berfungsi sebagai penanda area sudah disemprot, bukan klaim efikasi.</p>
+    <p class="asof">Data per 26 November 2026 · harga bahan diakses 11 November 2026</p>
+  </section>
+
+  <section class="block" id="status" aria-labelledby="h-status">
+    <p class="eyebrow">01 · Status luaran</p>
+    <h2 id="h-status">Tiga luaran siap ditinjau, satu menunggu uji lab.</h2>
+    <div class="status">
+      <article><span class="tag draft">Draf</span><h3>Skema formulasi</h3><p>Produk berupa cairan, jadi skema formulasi dipakai sebagai pengganti desain 3D/CAD. Urutan pencampuran menunggu validasi kimiawan (Pak Pugoh).</p></article>
+      <article><span class="tag done">Selesai</span><h3>Bill of Materials</h3><p>11 bahan, kadar % b/b, kebutuhan per 1 L dan per batch 100 L, serta harga dari 21 tautan toko.</p></article>
+      <article><span class="tag done">Selesai</span><h3>Kalkulasi HPP awal</h3><p>Rp62.320 per botol sprayer 1 L. Beberapa komponen non-bahan masih asumsi tim.</p></article>
+      <article><span class="tag wait">Belum ada</span><h3>Foto/video uji sampel</h3><p>Uji DoE di LKPI belum berjalan. Protokol dokumentasinya sudah siap di bawah.</p></article>
+    </div>
+  </section>
+
+  <section class="block" id="skema" aria-labelledby="h-skema">
+    <p class="eyebrow">02 · Skema formulasi</p>
+    <h2 id="h-skema">H<sub>2</sub>O<sub>2</sub> masuk paling akhir, setelah logam terikat dan aroma terlarut.</h2>
+    <div class="figure">
+      <svg viewBox="0 0 760 640" role="img" aria-labelledby="skema-title skema-desc">
+        <title id="skema-title">Skema pembuatan formula F-01</title>
+        <desc id="skema-desc">Fase A berisi air demineralisasi, HEDP, asam sitrat, dan trisodium sitrat. Fase B berisi alcohol ethoxylate dengan campuran aroma. Fase B digabung ke fase A, lalu H2O2 50 persen ditambahkan terakhir, dilanjutkan kontrol mutu. Sampel yang lulus diisi ke botol HDPE maksimal 80 persen dengan tutup berventilasi; yang tidak lulus dicatat dan disesuaikan kimiawan lalu diuji ulang.</desc>
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c5bdf2"/></marker></defs>
+        <g fill="none" stroke="#ffffff55" stroke-width="1.25">
+          <rect x="40" y="20" width="320" height="88" rx="8"/><rect x="400" y="20" width="320" height="88" rx="8"/>
+          <rect x="210" y="148" width="340" height="40" rx="8"/><rect x="210" y="328" width="340" height="56" rx="8"/>
+          <polygon points="310,450 380,414 450,450 380,486"/><rect x="576" y="414" width="160" height="72" rx="8"/>
+          <rect x="210" y="526" width="340" height="56" rx="8"/>
+        </g>
+        <rect x="210" y="228" width="340" height="56" rx="8" fill="#ffc23d26" stroke="#ffc23d" stroke-width="2"/>
+        <g fill="none" stroke="#c5bdf2" stroke-width="1.25">
+          <path d="M200 108V168H210" marker-end="url(#arr)"/><path d="M560 108V168H550" marker-end="url(#arr)"/>
+          <path d="M380 188V228" marker-end="url(#arr)"/><path d="M380 284V328" marker-end="url(#arr)"/>
+          <path d="M380 384V414" marker-end="url(#arr)"/><path d="M380 486V526" marker-end="url(#arr)"/>
+          <path d="M450 450H576" marker-end="url(#arr)"/><path d="M656 414V356H550" marker-end="url(#arr)"/>
+        </g>
+        <g font-family="Plus Jakarta Sans,system-ui,sans-serif" font-size="13" fill="#f3f0ff">
+          <text x="56" y="44" font-weight="600">Fase A · air</text>
+          <text x="56" y="60" font-size="11.5" fill="#c5bdf2">1. ~80% air demineralisasi</text>
+          <text x="56" y="76" font-size="11.5" fill="#c5bdf2">2. HEDP 0,17% (kelat logam)</text>
+          <text x="56" y="92" font-size="11.5" fill="#c5bdf2">3. asam sitrat 0,2% + trisodium sitrat 0,1%</text>
+          <text x="416" y="44" font-weight="600">Fase B · premix aroma</text>
+          <text x="416" y="60" font-size="11.5" fill="#c5bdf2">4. alcohol ethoxylate 7EO 2%</text>
+          <text x="416" y="76" font-size="11.5" fill="#c5bdf2">+ campuran aroma 0,4% (5 komponen)</text>
+          <text x="416" y="92" font-size="11.5" fill="#c5bdf2">aduk sampai jernih</text>
+          <text x="380" y="172" text-anchor="middle">5. Gabungkan fase B ke fase A, aduk pelan</text>
+          <text x="380" y="252" text-anchor="middle" font-weight="600">6. H₂O₂ 50% (6% b/b) ditambahkan terakhir</text>
+          <text x="380" y="270" text-anchor="middle" font-size="11.5">perlahan, lalu genapkan air sampai 1 L</text>
+          <text x="380" y="352" text-anchor="middle" font-weight="600">7. Kontrol mutu</text>
+          <text x="380" y="370" text-anchor="middle" font-size="11.5" fill="#c5bdf2">pH 3,5–4,0 · jernih · kadar H₂O₂ awal</text>
+          <text x="380" y="454" text-anchor="middle">Lulus QC?</text>
+          <text x="656" y="438" text-anchor="middle" font-weight="600">Tidak lulus</text>
+          <text x="656" y="454" text-anchor="middle" font-size="11.5" fill="#c5bdf2">catat penyimpangan</text>
+          <text x="656" y="470" text-anchor="middle" font-size="11.5" fill="#c5bdf2">pH disesuaikan kimiawan</text>
+          <text x="380" y="550" text-anchor="middle" font-weight="600">8. Isi botol HDPE maks. 80%</text>
+          <text x="380" y="568" text-anchor="middle" font-size="11.5" fill="#c5bdf2">tutup berventilasi, lalu sampel uji 54 °C dan 30 °C</text>
+          <text x="388" y="510" font-size="11.5" fill="#c5bdf2">ya</text>
+          <text x="513" y="442" text-anchor="middle" font-size="11.5" fill="#c5bdf2">tidak</text>
+          <text x="664" y="388" font-size="11.5" fill="#c5bdf2">uji ulang</text>
+          <text x="24" y="618" font-size="11.5" fill="#c5bdf2">Draf: urutan langkah 2–6 belum ada sumber dan menunggu validasi kimiawan. Langkah 1, 7, 8 dari rencana eksperimen LKPI.</text>
+        </g>
+      </svg>
+    </div>
+    <p class="fine">Peralatan memakai kaca atau HDPE yang dibilas air demineralisasi, tanpa logam, karena logam mempercepat penguraian H<sub>2</sub>O<sub>2</sub>. H<sub>2</sub>O<sub>2</sub> selalu ditambahkan ke air, bukan sebaliknya.</p>
+  </section>
+
+  <section class="block" id="bom" aria-labelledby="h-bom">
+    <p class="eyebrow">03 · Bill of Materials</p>
+    <h2 id="h-bom">Rp38.128 bahan per liter, dan 61% di antaranya untuk aroma.</h2>
+    <p>Massa jenis dianggap 1 kg/L. Harga yang dipakai adalah median dari tautan toko; dengan harga terendah, biaya bahan turun ke Rp32.058 per liter.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Tabel Bill of Materials F-01">
+      <table>
+        <thead><tr><th>Bahan</th><th>CAS</th><th class="r">% b/b</th><th class="r">Per 1 L (g)</th><th class="r">Per 100 L (kg)</th><th class="r">Harga median (Rp/kg)</th><th class="r">Biaya per L (Rp)</th></tr></thead>
+        <tbody>
+          <tr><td>Hidrogen peroksida 50% teknis<small>Zat aktif, setara 3% H₂O₂</small></td><td class="mono">7722-84-1</td><td class="r">6,00</td><td class="r">60,0</td><td class="r">6,000</td><td class="r">17.500</td><td class="r">1.050</td></tr>
+          <tr><td>Alcohol ethoxylate C12–14 7EO<small>Surfaktan, pelarut aroma</small></td><td class="mono">68439-50-9</td><td class="r">2,00</td><td class="r">20,0</td><td class="r">2,000</td><td class="r">107.375</td><td class="r">2.148</td></tr>
+          <tr><td>HEDP ~60%<small>Kelat logam, penstabil</small></td><td class="mono">2809-21-4</td><td class="r">0,17</td><td class="r">1,7</td><td class="r">0,170</td><td class="r">104.500</td><td class="r">178</td></tr>
+          <tr><td>Asam sitrat<small>Pengatur pH</small></td><td class="mono">77-92-9</td><td class="r">0,20</td><td class="r">2,0</td><td class="r">0,200</td><td class="r">45.000</td><td class="r">90</td></tr>
+          <tr><td>Trisodium sitrat<small>Buffer</small></td><td class="mono">68-04-2</td><td class="r">0,10</td><td class="r">1,0</td><td class="r">0,100</td><td class="r">34.000</td><td class="r">34</td></tr>
+          <tr class="aroma"><td>Dihydromyrcenol<small>Aroma citrus-fresh</small></td><td class="mono">18479-58-8</td><td class="r">0,16</td><td class="r">1,6</td><td class="r">0,160</td><td class="r">8.229.167</td><td class="r">13.167</td></tr>
+          <tr class="aroma"><td>Dimetol<small>Aroma fresh-floral; harga proksi dihydromyrcenol</small></td><td class="mono">13254-34-7</td><td class="r">0,08</td><td class="r">0,8</td><td class="r">0,080</td><td class="r">8.229.167</td><td class="r">6.583</td></tr>
+          <tr class="aroma"><td>Styrallyl acetate<small>Aroma fruity-green</small></td><td class="mono">93-92-5</td><td class="r">0,06</td><td class="r">0,6</td><td class="r">0,060</td><td class="r">603.360</td><td class="r">362</td></tr>
+          <tr class="aroma"><td>Tricyclodecenyl propionate<small>Aroma fruity-woody</small></td><td class="mono">17511-60-3</td><td class="r">0,06</td><td class="r">0,6</td><td class="r">0,060</td><td class="r">810.000</td><td class="r">486</td></tr>
+          <tr class="aroma"><td>Ethylene brassylate<small>Aroma musk</small></td><td class="mono">105-95-3</td><td class="r">0,04</td><td class="r">0,4</td><td class="r">0,040</td><td class="r">6.600.000</td><td class="r">2.640</td></tr>
+          <tr><td>Air demineralisasi<small>Pelarut; Fe ≤0,1 mg/L, Cu ≤0,05 mg/L</small></td><td class="mono">7732-18-5</td><td class="r">91,13</td><td class="r">911,3</td><td class="r">91,130</td><td class="r">12.500</td><td class="r">11.391</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td></td><td class="r">100,00</td><td class="r">1.000,0</td><td class="r">100,000</td><td></td><td class="r">38.128</td></tr></tfoot>
+      </table>
+    </div>
+    <p class="fine">Baris bergaris kuning adalah komponen aroma. Harga aroma berasal dari kemasan eceran perfumer 10–30 g, dan harga beli dalam jumlah besar biasanya jauh lebih rendah. Harga marketplace dapat berubah; cek ulang sebelum membeli.</p>
+  </section>
+
+  <section class="block" id="hpp" aria-labelledby="h-hpp">
+    <p class="eyebrow">04 · Kalkulasi HPP awal</p>
+    <h2 id="h-hpp">HPP awal Rp62.320 per botol sprayer 1 L.</h2>
+    <div class="kpis">
+      <div><strong>Rp62.320</strong><span>HPP per botol 1 L, harga bahan median</span></div>
+      <div><strong>±Rp55.500</strong><span>HPP dengan harga bahan terendah</span></div>
+      <div><strong>±Rp89.000</strong><span>harga ritel minimal agar tidak rugi, dengan margin distributor 30%</span></div>
+    </div>
+    <div class="stack" role="img" aria-label="Komposisi HPP: bahan baku 62 persen, botol 24 persen, overhead 9 persen, label 2 persen, QC 2 persen, tenaga kerja 1 persen">
+      <i class="c1" style="width:62.4%"></i><i class="c2" style="width:24.3%"></i><i class="c3" style="width:8.8%"></i><i class="c4" style="width:1.6%"></i><i class="c5" style="width:1.6%"></i><i class="c6" style="width:1.3%"></i>
+    </div>
+    <ul class="legend">
+      <li><b class="c1"></b>Bahan baku + susut 2% · Rp38.891</li>
+      <li><b class="c2"></b>Botol sprayer 1 L · Rp15.173</li>
+      <li><b class="c3"></b>Overhead 10% · Rp5.506</li>
+      <li><b class="c4"></b>Label dan segel · Rp1.000</li>
+      <li><b class="c5"></b>QC per batch · Rp1.000</li>
+      <li><b class="c6"></b>Tenaga kerja · Rp750</li>
+    </ul>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Rincian HPP per botol">
+      <table>
+        <thead><tr><th>Komponen</th><th class="r">Per botol 1 L</th><th>Dasar perhitungan</th></tr></thead>
+        <tbody>
+          <tr><td>Bahan baku, termasuk susut 2%</td><td class="r">Rp38.891</td><td>BOM median; susut adalah asumsi tim</td></tr>
+          <tr><td>Botol sprayer 1 L</td><td class="r">Rp15.173</td><td>Harga marketplace; material HDPE belum dikonfirmasi</td></tr>
+          <tr><td>Label dan segel</td><td class="r">Rp1.000</td><td>Asumsi tim</td></tr>
+          <tr><td>Tenaga kerja langsung</td><td class="r">Rp750</td><td>UMK Sukoharjo 2026 Rp2.500.000 × 25% waktu 1 operator ÷ 833 L per bulan</td></tr>
+          <tr><td>QC per batch (titrasi H₂O₂, pH)</td><td class="r">Rp1.000</td><td>Rp100.000 per batch 100 L; asumsi tim</td></tr>
+          <tr><td>Overhead pabrik</td><td class="r">Rp5.506</td><td>10% dari bahan dan kemasan; asumsi tim</td></tr>
+        </tbody>
+        <tfoot><tr><td>HPP per botol</td><td class="r">Rp62.320</td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <p class="fine">HPP ini di atas harga ritel disinfektan H₂O₂ 1 L pembanding (Rp49.900). Pengungkit terbesar: membeli aroma dalam jumlah besar, menurunkan kadar aroma (DoE B menguji 0,2%), dan memproduksi air demineralisasi sendiri dengan unit RO/DI.</p>
+  </section>
+
+  <section class="block" id="foto" aria-labelledby="h-foto">
+    <p class="eyebrow">05 · Foto dan video uji sampel</p>
+    <h2 id="h-foto">Setiap sampel difoto dengan cara yang sama di setiap titik waktu.</h2>
+    <ol class="steps">
+      <li><b>Bahan baku:</b> foto tiap bahan sebelum dicampur, dengan label, nomor lot, dan kadar terlihat.</li>
+      <li><b>Proses pencampuran:</b> video pendek setiap langkah skema, termasuk saat H₂O₂ ditambahkan terakhir, dengan APD terlihat.</li>
+      <li><b>Sampel hari ke-0:</b> foto tiap vial dengan <code>kode_vial</code> terbaca, di depan latar hitam lalu putih, dengan pencahayaan, jarak, dan sudut yang sama serta penggaris atau kartu warna.</li>
+      <li><b>Setiap titik waktu</b> (54 °C hari 7 dan 14; 30 °C hari 28 dan 56): ulangi foto langkah 3, dengan blanko dan sampel segar sebagai pembanding.</li>
+      <li><b>pH dan titrasi:</b> foto layar pH meter dengan kode vial di bingkai, serta titik akhir titrasi dan bacaan buret.</li>
+      <li><b>Panel aroma:</b> foto formulir penilaian dengan kode panelis, bukan nama.</li>
+      <li><b>Efikasi:</b> foto cawan dan laporan resmi dari laboratorium penguji.</li>
+    </ol>
+    <p class="fine">Nama file: <code>&lt;kode_vial&gt;_&lt;suhu&gt;_&lt;hari&gt;_&lt;jenis&gt;.jpg</code>, misalnya <code>A-13-54-R1_54C_D14_latar-hitam.jpg</code>. Simpan file asli tanpa filter, dan biarkan metadata waktu pengambilan tetap ada.</p>
+    <div class="empty" role="status">
+      <strong>Galeri uji sampel masih kosong.</strong>
+      <p>Uji sampel F-01 di LKPI belum dimulai. Galeri ini hanya akan diisi foto dan video dari uji yang benar-benar dilakukan, tanpa gambar stok atau gambar buatan AI.</p>
+    </div>
+  </section>
+
+  <section class="block" id="sumber" aria-labelledby="h-sumber">
+    <p class="eyebrow">06 · Sumber</p>
+    <h2 id="h-sumber">Dari mana angka-angka ini berasal.</h2>
+    <ul class="src">
+      <li>Komposisi F-01 dan harga bahan: dataset BAYLab (<code>05_biaya_formulasi_per_liter.csv</code>, <code>04_harga_bahan.csv</code>), dengan tautan toko untuk setiap harga.</li>
+      <li><a href="https://www.tokopedia.com/alatbersihbersih/botol-sprayer-plastik-asena-botol-plastik-semprot-1000-500cc-1000cc" rel="noopener" target="_blank">Botol Sprayer Plastik ASENA 1000 cc (Tokopedia)</a>: harga kemasan.</li>
+      <li><a href="https://www.detik.com/jateng/bisnis/d-8275954/daftar-lengkap-umk-2026-se-jateng-semarang-tertinggi-banjarnegara-terendah" rel="noopener" target="_blank">Daftar UMK Jawa Tengah 2026 (detik Jateng)</a>: UMK Sukoharjo.</li>
+      <li><a href="https://www.ruparupa.com/p/dr-vikers-disinfektan-1-ltr.html" rel="noopener" target="_blank">Dr Vikers Disinfektan 1 L (Ruparupa)</a>: harga pembanding.</li>
+      <li>Rencana eksperimen LKPI: langkah keselamatan, pengisian botol, dan titik waktu uji.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="wrap">
+  <span>Prototipe BAYLab AI · Side Quest UTS · UMS Health Innovation Hackathon 2026</span>
+  <span>Tantangan LKPI-01 · PT Likuid Pharmalab Indonesia</span>
+</footer>
+</body></html>
