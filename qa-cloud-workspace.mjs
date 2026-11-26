@@ -25,7 +25,7 @@ try {
  await until("!!document.querySelector('#org-login')");
  await evaluate(`{const f=document.querySelector('#org-login');f.elements.organization.value='lkpi';f.elements.email.value='admin@example.test';f.elements.password.value='Valid-Test-Password-123';f.requestSubmit();}`);
  await until("!!document.querySelector('.main') && !document.querySelector('.main > [role=status]')");
- await check('cloud activation status reflects database capability',"document.body.innerText.includes('Formulasi, penilaian kandidat, dan eksperimen tersimpan di Supabase') && !document.body.innerText.includes('data lokal belum dipindahkan')");
+ await check('ready workspace has no persistent information banner',"!document.body.innerText.includes('Formulasi, penilaian kandidat, dan eksperimen tersimpan di Supabase') && !document.body.innerText.includes('Aktivasi workspace belum selesai')");
  await call('Network.enable');
  await call('Network.setCookie',{name:'baylab_cloud_csrf',value:'a'.repeat(64),url:'http://127.0.0.1:3012/',httpOnly:true,sameSite:'Strict',path:'/'});
  for(const name of ['UI Candidate A','UI Candidate B']){
@@ -51,7 +51,7 @@ try {
  await until("location.hash.includes('evaluasi') && !document.querySelector('.main > [role=status]')");
  await check('experiment saved with real computed retention',"baylabFetch('/api/workspace/experiments').then(r=>r.json()).then(x=>x.some(e=>e.batch_id==='UI-B1'&&e.retention_pct===90&&e.data_origin==='synthetic'))");
  await call('Page.reload');
- await until("performance.getEntriesByType('navigation')[0]?.type==='reload' && document.body.innerText.includes('UI-B1') && document.body.innerText.includes('Formulasi, penilaian kandidat, dan eksperimen tersimpan di Supabase')");
+ await until("performance.getEntriesByType('navigation')[0]?.type==='reload' && document.body.innerText.includes('UI-B1') && !!document.querySelector('.main') && !document.querySelector('.main > [role=status]')");
  await check('session and saved experiment survive reload',"document.body.innerText.includes('UI-B1')");
  await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await evaluate("go('formulasi')");
