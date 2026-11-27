@@ -1,0 +1,7 @@
+{
+ "min_kasus_tervalidasi": 20,
+ "min_kesesuaian_gugus": 0.9,
+ "min_kasus_berlabel_stabilitas": 10,
+ "min_akurasi_seimbang_stabilitas": 0.7,
+ "ambang_probabilitas_stabil": 0.5
+}
