@@ -110,6 +110,56 @@
   window.labTrain=form=>{const d=Object.fromEntries(new FormData(form));if(!d.protocol)d.protocol='';work(async()=>{const run=await api('workspace/model/train',d);lab.runId=run.id;await refresh();});};
   window.labChooseRun=id=>{lab.runId=id;render();};
   window.labRefresh=()=>work(refresh);
+  // Printable report: built only from records already loaded for this organization.
+  const roleNames={active:'Zat aktif',fragrance:'Parfum',solubilizer:'Solubilizer',stabilizer:'Penstabil',solvent:'Pelarut',water:'Air',other:'Lainnya'};
+  const originText=o=>o==='synthetic'?'Data contoh ilustratif':'Data organisasi';
+  function reportForms(){
+    if(!lab.forms.length)return '<p>Belum ada kandidat formulasi tersimpan.</p>';
+    return lab.forms.map(f=>{
+      const items=f.ingredients||[],total=items.reduce((s,i)=>s+(Number(i.percent)||0),0),a=f.assessment;
+      const scored=a?keys.filter(k=>a[k]&&a[k].score!=null):[];
+      return '<div class="report-block"><h3>'+safe(f.name)+' <small>· '+originText(f.data_origin)+'</small></h3>'+(f.aroma_profile?'<p>Profil aroma: '+safe(f.aroma_profile)+'</p>':'')
+        +'<table><thead><tr><th>Bahan</th><th>Peran</th><th class="rnum">% b/b</th></tr></thead><tbody>'+items.map(i=>'<tr><td>'+safe(i.name)+'</td><td>'+safe(roleNames[i.role]||i.role)+'</td><td class="rnum">'+number(i.percent)+'</td></tr>').join('')+'</tbody><tfoot><tr><td colspan="2">Total</td><td class="rnum">'+number(total)+'</td></tr></tfoot></table>'
+        +(scored.length?'<p class="report-sub">Penilaian kriteria · protokol '+safe(a.comparison_protocol||'—')+'</p><table><thead><tr><th>Kriteria</th><th class="rnum">Skor</th><th>Sumber</th><th>Alasan</th></tr></thead><tbody>'+scored.map(k=>'<tr><td>'+labels[k]+'</td><td class="rnum">'+number(a[k].score)+'</td><td>'+safe(a[k].source??a[k].source_ref??'')+'</td><td>'+safe(a[k].rationale||'')+'</td></tr>').join('')+'</tbody></table>':'<p class="report-muted">Belum ada penilaian kriteria.</p>')
+        +(f.notes?'<p class="report-muted">Catatan: '+safe(f.notes)+'</p>':'')+'</div>';
+    }).join('');
+  }
+  function reportRank(){
+    if(!lab.rank)return '<p class="report-muted">Peringkat belum dihitung pada sesi ini. Buka Rekomendasi Formulasi, pilih kandidat, lalu tekan Hitung peringkat.</p>';
+    return '<p>'+safe(lab.rank.method)+'</p><table><thead><tr><th class="rnum">#</th><th>Kandidat</th><th class="rnum">Skor / 100</th><th>Kontribusi per kriteria</th></tr></thead><tbody>'+lab.rank.ranked.map(r=>'<tr><td class="rnum">'+r.rank+'</td><td>'+safe(r.name)+'</td><td class="rnum">'+number(r.score)+'</td><td>'+keys.filter(k=>r.contributions[k]!=null).map(k=>labels[k]+': '+number(r.contributions[k])).join('; ')+'</td></tr>').join('')+'</tbody></table>'
+      +lab.rank.incomplete.map(r=>'<p class="report-muted">'+safe(r.name)+' belum diperingkat: '+r.missing.map(k=>safe(labels[k]||'Protokol belum sama')).join(', ')+'.</p>').join('')+'<p class="report-muted">'+safe(lab.rank.scope)+'</p>';
+  }
+  function reportTrials(){
+    if(!lab.trials.length)return '<p class="report-muted">Belum ada hasil eksperimen tercatat.</p>';
+    return '<table><thead><tr><th>Batch / kandidat</th><th>Protokol / sumber</th><th class="rnum">H₂O₂ awal → akhir (%)</th><th class="rnum">Retensi</th><th class="rnum">pH</th><th>Kondisi</th><th>Asal data</th></tr></thead><tbody>'+lab.trials.map(r=>'<tr><td>'+safe(r.batch_id)+'<br><small>'+safe(r.formulation_name)+'</small></td><td>'+safe(r.protocol)+'<br><small>'+safe(r.source_ref)+'</small></td><td class="rnum">'+number(r.initial_h2o2)+' → '+number(r.final_h2o2)+'</td><td class="rnum">'+number(r.retention_pct)+'%</td><td class="rnum">'+number(r.ph)+'</td><td>'+number(r.temperature_c)+' °C · '+number(r.duration_days)+' hari<br><small>'+(r.homogeneous?'Homogen':'Tidak homogen')+'</small></td><td>'+originText(r.data_origin)+'</td></tr>').join('')+'</tbody></table>';
+  }
+  function reportScreening(){
+    const latest=window.chemistryLatest?.();
+    if(!latest)return '<p class="report-muted">Belum ada hasil screening molekul pada sesi ini. Screening membutuhkan backend lokal; buka Hasil Screening dan Analisis, jalankan satu molekul, lalu kembali ke halaman ini.</p>';
+    const r=latest.result;
+    return '<div class="report-chem">'+(r.depiction?'<img src="'+safe(r.depiction)+'" alt="Struktur '+safe(r.canonical_smiles)+' dengan gugus terdeteksi disorot">':'')+'<table><tbody><tr><th>SMILES kanonik</th><td class="mono">'+safe(r.canonical_smiles)+'</td></tr><tr><th>Rumus / massa</th><td>'+safe(r.molecular_formula)+' · '+number(r.molecular_weight)+' g/mol</td></tr>'+(latest.source?'<tr><th>Identitas</th><td>'+safe(latest.source.title||latest.source.name||'')+' '+safe(latest.source.url||'')+'</td></tr>':'')+'<tr><th>Mesin</th><td>'+safe(r.engine)+' · aturan '+safe(r.ruleset_version)+' · '+safe(r.analyzed_at)+'</td></tr></tbody></table></div>'
+      +'<table><thead><tr><th>Pola (draf)</th><th>Gugus</th><th class="rnum">Jumlah</th></tr></thead><tbody>'+(r.matches.length?r.matches.map(m=>'<tr><td>'+safe(m.rule.id)+'</td><td>'+safe(m.rule.name)+'</td><td class="rnum">'+m.count+'</td></tr>').join(''):'<tr><td colspan="3">Tidak ada pola yang cocok. Ini bukan bukti aman atau stabil.</td></tr>')+'</tbody></table><p class="report-muted">'+safe(r.message)+'</p>';
+  }
+  function reportView(){
+    const now=new Date().toLocaleString('id-ID',{dateStyle:'long',timeStyle:'short'});
+    const checks=[['Kandidat formulasi',lab.forms.length>0,'formulasi'],['Penilaian kriteria',lab.forms.some(f=>f.assessment),'rekomendasi'],['Peringkat kandidat',!!lab.rank,'rekomendasi'],['Hasil eksperimen',lab.trials.length>0,'input'],['Screening molekul (backend lokal)',!!window.chemistryLatest?.(),'screening']];
+    return '<div class="no-print">'+labHead('Cetak laporan','Laporan disusun dari data organisasi pada sesi ini. Lengkapi bagian yang masih kosong, lalu tekan Cetak dan pilih printer atau Simpan sebagai PDF.',button('Cetak / simpan PDF','labPrint()',true))
+      +'<section class="card mb"><h2>Kelengkapan laporan</h2><ul class="report-checks">'+checks.map(([t,ok,to])=>'<li class="'+(ok?'ok':'todo')+'"><span>'+(ok?'Terisi':'Belum ada')+'</span> '+t+(ok?'':' · <a href="#'+to+'">lengkapi</a>')+'</li>').join('')+'</ul></section></div>'
+      +'<article class="report card"><header class="report-head"><p class="report-kicker">BAYLab AI · Laporan analisis formulasi</p><h1>'+safe(lab.user.organization.name)+'</h1><table class="report-meta"><tbody><tr><th>Disusun oleh</th><td>'+safe(lab.user.name)+' ('+safe(roles[lab.user.role])+')</td></tr><tr><th>Dicetak</th><td>'+safe(now)+'</td></tr><tr><th>Sumber data</th><td>'+(lab.provider==='supabase'?'Workspace cloud (Supabase)':'Workspace lokal')+' · '+number(lab.forms.length)+' kandidat · '+number(lab.trials.length)+' eksperimen</td></tr></tbody></table>'
+      +'<p class="report-warn">Draf pendukung keputusan. Aturan kimia masih berstatus draf dan belum divalidasi kimiawan. Laporan ini bukan hasil uji laboratorium dan bukan klaim efikasi antimikroba.</p></header>'
+      +'<section><h2>1. Kandidat formulasi</h2>'+reportForms()+'</section>'
+      +'<section><h2>2. Peringkat kandidat</h2>'+reportRank()+'</section>'
+      +'<section><h2>3. Hasil eksperimen</h2>'+reportTrials()+'</section>'
+      +'<section><h2>4. Screening molekul terakhir</h2>'+reportScreening()+'</section>'
+      +'<section><h2>5. Batasan</h2><ul><li>Skor peringkat berasal dari penilaian tim beserta sumbernya, bukan dari model.</li><li>Pola gugus hanya mendeteksi struktur; tidak adanya kecocokan bukan bukti aman atau stabil.</li><li>Data contoh ilustratif tidak dipakai sebagai data latih dan ditandai terpisah.</li><li>Efikasi antimikroba hanya dapat dinyatakan dari uji laboratorium terakreditasi.</li></ul></section>'
+      +'<footer class="report-foot">Dihasilkan oleh BAYLab AI · '+safe(now)+'</footer></article>';
+  }
+  window.labPrint=()=>window.print();
+  const reportStyle=document.createElement('style');
+  reportStyle.textContent='.report{padding:32px;max-width:900px}.report h1{font-size:26px;margin:4px 0 14px}.report h2{font-size:18px;margin:26px 0 10px;padding-top:14px;border-top:1px solid var(--line)}.report h3{font-size:15px;margin:16px 0 6px}.report h3 small{font-weight:400;color:var(--muted)}.report table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 10px}.report th,.report td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}.report thead th{background:#f6f4fd}.report .rnum{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.report tfoot td{font-weight:600}.report-kicker{text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted);margin:0}.report-meta{max-width:560px}.report-meta th{width:150px;background:transparent!important}.report-warn{background:#fff7e6;border:1px solid #f2d39a;border-radius:8px;padding:10px 12px;font-size:13px}.report-muted,.report-sub{color:var(--muted);font-size:13px}.report-chem{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:16px;align-items:start}.report-chem img{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}.report .mono{font-family:ui-monospace,Consolas,monospace;overflow-wrap:anywhere}.report-foot{margin-top:28px;font-size:11px;color:var(--muted)}.report-checks{list-style:none;padding:0;margin:0;display:grid;gap:8px}.report-checks span{display:inline-block;min-width:84px;font-size:12px;font-weight:600;padding:3px 8px;border-radius:20px;margin-right:6px}.report-checks .ok span{background:#e5f5ec;color:#14773e}.report-checks .todo span{background:#fdecea;color:#b3261e}@media(max-width:700px){.report{padding:18px}.report-chem{grid-template-columns:minmax(0,1fr)}}'
+    +'@media print{@page{size:A4;margin:14mm}body{background:#fff!important}.sidebar,.mobile,.no-print,.toast,dialog{display:none!important}.main{margin:0!important;padding:0!important;min-height:0!important}.main>.note{display:none!important}.report{border:0!important;box-shadow:none!important;padding:0!important;max-width:none}.report section,.report-block,.report tr{break-inside:avoid}.report h2{break-after:avoid}.report a{color:inherit;text-decoration:none}}';
+  document.head.appendChild(reportStyle);
+  views.laporan=reportView;
   views.dashboard=dashboardView;views.formulasi=formulationView;views.rekomendasi=comparisonView;views.aroma=comparisonView;views.evaluasi=trialsView;views.input=experimentView;views.model=modelView;views.library=libraryView;views.pengaturan=settingsView;
   views.literatur=()=>labHead('Literatur dan bukti','Telusuri catatan literatur serta dokumen organisasi.')+'<section class="card"><p>Gunakan Chat RAG untuk menelusuri sumber; sumber kimia draft tersedia bersama hasil screening struktur.</p>'+button('Buka RAG',"go('chat')",true)+' '+button('Buka screening',"go('screening')")+'</section>';
   login=orgLogin;
