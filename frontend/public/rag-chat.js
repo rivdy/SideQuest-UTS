@@ -1,7 +1,7 @@
 /* Local document-grounded chat. All untrusted text is escaped before rendering. */
 (() => {
   const api = '/api/rag';
-  const rag = {documents:[], selected:new Set(), messages:[], status:null, error:'', busy:false, uploading:false, loaded:false, refreshing:false, mode:'cepat'};
+  const rag = {documents:[], selected:new Set(), messages:[], status:null, error:'', busy:false, uploading:false, loaded:false, refreshing:false, mode:'lengkap'};
   const safe = value => esc(String(value ?? ''));
   const modes = {extractive:'Kutipan cepat · tanpa model bahasa',generated:'Jawaban Ollama lokal',retrieval_only:'Sumber ditemukan · model belum siap',no_evidence:'Belum ada sumber',no_supported_answer:'Belum ada jawaban terdukung'};
   function redraw(){if(route()==='chat')render();}

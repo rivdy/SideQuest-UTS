@@ -133,10 +133,25 @@ CANDIDATES = [
         },
     ),
 ]
-EXPERIMENTS = {
-    "F-01 aroma tahan oksidasi (contoh)": (3.0, 2.85, 3.8, True, 4.0),
-    "Lemon klasik: limonene + citral (pembanding, contoh)": (3.0, 2.1, 3.5, False, 2.0),
-}
+F01, F02 = "F-01 aroma tahan oksidasi (contoh)", "F-02 aroma 0,2% (contoh)"
+F01L, LEMON = "F-01 + limonene (pembanding, contoh)", "Lemon klasik: limonene + citral (pembanding, contoh)"
+
+
+def org(color: str, clarity: str, sediment: str, separated: bool, odor: str) -> dict:
+    return {"color": color, "clarity": clarity, "sediment": sediment,
+            "phase_separation": separated, "odor_note": odor, "panelists": 5}
+
+
+# Batch order defines DEMO-B1, DEMO-B2, ... so existing batches are never duplicated.
+# (formulation, H2O2 start, H2O2 end, pH, homogeneous, aroma 0-5, organoleptic)
+EXPERIMENTS = [
+    (F01, 3.0, 2.85, 3.8, True, 4.0, None),
+    (LEMON, 3.0, 2.1, 3.5, False, 2.0, None),
+    (F01, 3.0, 2.82, 3.8, True, 3.8, org("tidak berwarna", "jernih", "tidak ada", False, "citrus segar")),
+    (F02, 3.0, 2.88, 3.9, True, 2.6, org("tidak berwarna", "jernih", "tidak ada", False, "citrus lemah")),
+    (F01L, 3.0, 2.4, 3.6, True, 3.4, org("kuning pucat", "opalesen", "sedikit", False, "citrus tajam, sedikit off-odor")),
+    (LEMON, 3.0, 2.05, 3.4, False, 1.6, org("kuning pucat", "keruh", "sedikit", True, "aroma lemon memudar, bau tengik ringan")),
+]
 
 
 def login(client: httpx.Client, email: str, password: str) -> None:
@@ -210,7 +225,7 @@ def main() -> None:
                 ).raise_for_status()
         batches = {e["batch_id"] for e in client.get("/api/workspace/experiments").json()}
         logged = 0
-        for i, (name, (start, end, ph, homogeneous, aroma)) in enumerate(EXPERIMENTS.items(), 1):
+        for i, (name, start, end, ph, homogeneous, aroma, organoleptic) in enumerate(EXPERIMENTS, 1):
             batch = f"DEMO-B{i}"
             if batch in batches:
                 continue
@@ -219,6 +234,7 @@ def main() -> None:
                 "source_ref": "Nilai rekaan untuk demo; bukan hasil uji", "measured_on": "2026-11-28",
                 "initial_h2o2": start, "final_h2o2": end, "ph": ph, "temperature_c": 54,
                 "duration_days": 14, "homogeneous": homogeneous, "aroma_intensity": aroma,
+                "organoleptic": organoleptic,
                 "notes": NOTE, "data_origin": "synthetic",
             }).raise_for_status()
             logged += 1

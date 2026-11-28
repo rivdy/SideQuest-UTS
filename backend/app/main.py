@@ -9,13 +9,21 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.chemistry.api import router as chemistry_router
+from app.formulation.api import router as formulation_router
 from app.rag.api import router as rag_router
 from app.workspace import auth
 from app.workspace.api import router as workspace_router
 from app.workspace.ml import router as model_router
 
 app = FastAPI(title="BAYLab AI API", version="0.2.0")
-for router in (auth.router, workspace_router, model_router, rag_router, chemistry_router):
+for router in (
+    auth.router,
+    workspace_router,
+    model_router,
+    rag_router,
+    chemistry_router,
+    formulation_router,
+):
     app.include_router(router)
 
 

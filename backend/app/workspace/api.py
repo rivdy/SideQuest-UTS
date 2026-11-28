@@ -99,7 +99,9 @@ def rank(payload: RankInput, request: Request) -> dict:
     origins = {c["data_origin"] for c in selected}
     if len(origins) != 1:
         raise HTTPException(
-            422, "Bandingkan kandidat nyata dan kandidat ilustrasi secara terpisah."
+            422,
+            "Bandingkan kandidat dengan asal data yang sama secara terpisah "
+            "(kandidat tim, literatur, atau ilustrasi).",
         )
     return rank_candidates(selected, payload.weights, payload.comparison_protocol)
 

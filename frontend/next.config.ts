@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
         ...(process.env.BAYLAB_AUTH_PROVIDER === "supabase" ? [] : [
           { source: "/api/rag/:path*", destination: "http://127.0.0.1:8000/api/rag/:path*" },
           { source: "/api/chemistry/:path*", destination: "http://127.0.0.1:8000/api/chemistry/:path*" },
+          { source: "/api/formulation/:path*", destination: "http://127.0.0.1:8000/api/formulation/:path*" },
           { source: "/api/auth/config", destination: "/api/cloud-config" },
           { source: "/api/auth/:path*", destination: "http://127.0.0.1:8000/api/auth/:path*" },
           { source: "/api/workspace/:path*", destination: "http://127.0.0.1:8000/api/workspace/:path*" }

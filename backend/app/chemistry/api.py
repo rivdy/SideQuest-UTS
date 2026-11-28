@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.rag.api import guard
 
+from .conformer import Conformer, conformer
 from .engine import ScreeningResult, screen
 from .evidence import SOURCES
 from .pubchem import LookupFailure, PubChemResult, lookup
@@ -49,6 +50,16 @@ def screen_structure(payload: StructureInput, request: Request) -> ScreeningResu
     guard(request, "chemistry-screen", 60)
     try:
         return screen(payload.smiles)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.post("/conformer", response_model=Conformer)
+def structure_3d(payload: StructureInput, request: Request) -> Conformer:
+    """Display-only 3D geometry for the structure viewer."""
+    guard(request, "chemistry-screen", 60)
+    try:
+        return conformer(payload.smiles)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

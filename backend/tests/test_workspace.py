@@ -302,3 +302,54 @@ def test_real_training_code_uses_disjoint_groups_and_saves_model(algorithm, tmp_
     assert len(report["points"]) == report["test_rows"]
     assert report["metrics"]["rmse"] >= 0
     assert list((tmp_path / algorithm).iterdir())
+
+
+def test_literature_candidates_are_ranked_separately_and_not_trainable():
+    c = client()
+    lit = create_form(c, "Patent example", origin="literature")
+    own = create_form(c, "Team candidate", origin="real", fraction=2)
+    assert lit["data_origin"] == "literature"
+    mixed = c.post(
+        "/api/workspace/rank",
+        json={
+            "formulation_ids": [lit["id"], own["id"]],
+            "weights": {k: 20 for k in CRITERIA},
+            "comparison_protocol": "SAME-RUBRIC",
+        },
+    )
+    assert mixed.status_code == 422 and "literatur" in mixed.json()["detail"]
+    data = trial(lit, origin="synthetic")
+    assert c.post("/api/workspace/experiments", json=data).status_code == 201
+    status = c.get("/api/workspace/model/status?target=h2o2_retention&protocol=LAB-TEST").json()
+    assert status["eligible_rows"] == 0
+    assert (
+        c.post(
+            "/api/workspace/formulations",
+            json={
+                "name": "Unknown origin",
+                "data_origin": "internet",
+                "ingredients": [{"name": "Water", "role": "water", "percent": 100}],
+            },
+        ).status_code
+        == 422
+    )
+
+
+def test_organoleptic_observation_is_stored_and_validated():
+    c = client()
+    f = create_form(c)
+    data = trial(f, batch="B-ORG")
+    data["organoleptic"] = {
+        "color": "tidak berwarna",
+        "clarity": "opalesen",
+        "sediment": "sedikit",
+        "phase_separation": False,
+        "odor_note": "citrus lemah",
+        "panelists": 5,
+    }
+    r = c.post("/api/workspace/experiments", json=data)
+    assert r.status_code == 201, r.text
+    assert r.json()["organoleptic"]["clarity"] == "opalesen"
+    data["batch_id"] = "B-ORG-2"
+    data["organoleptic"] = {"clarity": "berkabut"}
+    assert c.post("/api/workspace/experiments", json=data).status_code == 422

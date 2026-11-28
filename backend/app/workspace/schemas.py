@@ -23,7 +23,8 @@ class FormulationInput(StrictModel):
     aroma_profile: str = Field(default="", max_length=240)
     ingredients: list[Ingredient] = Field(min_length=1, max_length=30)
     notes: str = Field(default="", max_length=1500)
-    data_origin: Literal["real", "synthetic"] = "real"
+    # "literature": a published composition (pharmacopoeia, patent, label); not a lab result.
+    data_origin: Literal["real", "synthetic", "literature"] = "real"
 
     @model_validator(mode="after")
     def total(self):
@@ -79,6 +80,17 @@ class RankInput(StrictModel):
         return self
 
 
+class Organoleptic(StrictModel):
+    """Visual and sensory observations recorded by people; never predicted by the software."""
+
+    color: str = Field(default="", max_length=60)
+    clarity: Literal["jernih", "opalesen", "keruh"] | None = None
+    sediment: Literal["tidak ada", "sedikit", "banyak"] | None = None
+    phase_separation: bool | None = None
+    odor_note: str = Field(default="", max_length=240)
+    panelists: int | None = Field(default=None, ge=1, le=100)
+
+
 class ExperimentInput(StrictModel):
     formulation_id: str = Field(pattern=r"^[a-f0-9]{32}$")
     batch_id: str = Field(min_length=2, max_length=100)
@@ -92,6 +104,7 @@ class ExperimentInput(StrictModel):
     duration_days: float = Field(gt=0, le=3650)
     homogeneous: bool
     aroma_intensity: float | None = Field(default=None, ge=0, le=5)
+    organoleptic: Organoleptic | None = None
     notes: str = Field(default="", max_length=1500)
     data_origin: Literal["real", "synthetic"]
     confirmed_actual: bool = False
