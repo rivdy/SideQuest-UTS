@@ -6,7 +6,7 @@ import time
 from collections import defaultdict, deque
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
@@ -16,7 +16,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.workspace.auth import current_org
 
-from .service import answer, model_status
+from .service import answer, model_status, quick_answer
 from .store import Store
 
 router = APIRouter(prefix="/api/rag", tags=["local-rag"])
@@ -100,6 +100,8 @@ class Query(BaseModel):
     document_ids: list[Annotated[str, Field(pattern=r"^[a-f0-9]{24}$")]] = Field(
         default_factory=list, max_length=20
     )
+    # "cepat": verbatim excerpts in milliseconds, no language model; "lengkap": local Ollama.
+    mode: Literal["cepat", "lengkap"] = "lengkap"
 
 
 @router.get("/status")
@@ -158,4 +160,6 @@ def ask(query: Query, request: Request) -> dict[str, Any]:
     if set(query.document_ids) - existing:
         raise HTTPException(422, "Dokumen pilihan tidak tersedia. Muat ulang daftar sumber.")
     sources = store.search(query.question, query.document_ids)
+    if query.mode == "cepat":
+        return quick_answer(query.question, sources)
     return answer(query.question, sources)

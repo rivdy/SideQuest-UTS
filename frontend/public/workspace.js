@@ -140,6 +140,14 @@
     return '<div class="report-chem">'+(r.depiction?'<img src="'+safe(r.depiction)+'" alt="Struktur '+safe(r.canonical_smiles)+' dengan gugus terdeteksi disorot">':'')+'<table><tbody><tr><th>SMILES kanonik</th><td class="mono">'+safe(r.canonical_smiles)+'</td></tr><tr><th>Rumus / massa</th><td>'+safe(r.molecular_formula)+' · '+number(r.molecular_weight)+' g/mol</td></tr>'+(latest.source?'<tr><th>Identitas</th><td>'+safe(latest.source.title||latest.source.name||'')+' '+safe(latest.source.url||'')+'</td></tr>':'')+'<tr><th>Mesin</th><td>'+safe(r.engine)+' · aturan '+safe(r.ruleset_version)+' · '+safe(r.analyzed_at)+'</td></tr></tbody></table></div>'
       +'<table><thead><tr><th>Pola (draf)</th><th>Gugus</th><th class="rnum">Jumlah</th></tr></thead><tbody>'+(r.matches.length?r.matches.map(m=>'<tr><td>'+safe(m.rule.id)+'</td><td>'+safe(m.rule.name)+'</td><td class="rnum">'+m.count+'</td></tr>').join(''):'<tr><td colspan="3">Tidak ada pola yang cocok. Ini bukan bukti aman atau stabil.</td></tr>')+'</tbody></table><p class="report-muted">'+safe(r.message)+'</p>';
   }
+  function reportComposition(){
+    const b=window.chemistryBatchLatest?.();
+    if(!b)return '';
+    const rules=[['DRAFT-ALKENE','C=C'],['DRAFT-ALDEHYDE','Aldehida'],['DRAFT-ALCOHOL','Alkohol'],['DRAFT-PHENOL','Fenol'],['DRAFT-ESTER','Ester'],['DRAFT-PEROXIDE','Peroksida']];
+    return '<h3>Screening komposisi</h3><table><thead><tr><th>Komponen</th><th>Rumus</th>'+rules.map(([,t])=>'<th class="rnum">'+t+'</th>').join('')+'</tr></thead><tbody>'
+      +b.items.map(i=>i.ok?'<tr><td>'+safe(i.label)+'</td><td>'+safe(i.molecular_formula)+'</td>'+rules.map(([id])=>{const m=i.matches.find(x=>x.id===id);return '<td class="rnum">'+(m?m.count:'–')+'</td>';}).join('')+'</tr>':'<tr><td>'+safe(i.label)+'</td><td colspan="'+(rules.length+1)+'">'+safe(i.error)+'</td></tr>').join('')
+      +'</tbody></table><p class="report-muted">'+safe(b.message)+'</p>';
+  }
   function reportView(){
     const now=new Date().toLocaleString('id-ID',{dateStyle:'long',timeStyle:'short'});
     const checks=[['Kandidat formulasi',lab.forms.length>0,'formulasi'],['Penilaian kriteria',lab.forms.some(f=>f.assessment),'rekomendasi'],['Peringkat kandidat',!!lab.rank,'rekomendasi'],['Hasil eksperimen',lab.trials.length>0,'input'],['Screening molekul (backend lokal)',!!window.chemistryLatest?.(),'screening']];
@@ -150,7 +158,7 @@
       +'<section><h2>1. Kandidat formulasi</h2>'+reportForms()+'</section>'
       +'<section><h2>2. Peringkat kandidat</h2>'+reportRank()+'</section>'
       +'<section><h2>3. Hasil eksperimen</h2>'+reportTrials()+'</section>'
-      +'<section><h2>4. Screening molekul terakhir</h2>'+reportScreening()+'</section>'
+      +'<section><h2>4. Screening molekul</h2>'+reportScreening()+reportComposition()+'</section>'
       +'<section><h2>5. Batasan</h2><ul><li>Skor peringkat berasal dari penilaian tim beserta sumbernya, bukan dari model.</li><li>Pola gugus hanya mendeteksi struktur; tidak adanya kecocokan bukan bukti aman atau stabil.</li><li>Data contoh ilustratif tidak dipakai sebagai data latih dan ditandai terpisah.</li><li>Efikasi antimikroba hanya dapat dinyatakan dari uji laboratorium terakreditasi.</li></ul></section>'
       +'<footer class="report-foot">Dihasilkan oleh BAYLab AI · '+safe(now)+'</footer></article>';
   }

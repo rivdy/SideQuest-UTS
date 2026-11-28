@@ -8,6 +8,14 @@ from typing import Any
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from .store import STOP, normalize
+
+SENTENCE_BREAK = re.compile(r"(?<=[.!?;])\s+")
+QUICK_MESSAGE = (
+    "Kutipan verbatim paling relevan dari dokumen terindeks, dipilih tanpa model bahasa. "
+    "Ini bukan kesimpulan AI; baca konteks lengkapnya di sumber."
+)
+
 
 class LocalModelClient(httpx.Client):
     """Separate transport seam for local-model tests."""
@@ -79,11 +87,72 @@ def validate_claims(answer: ModelAnswer, sources: list[dict[str, Any]]) -> list[
     return claims
 
 
+def _terms(question: str) -> list[str]:
+    words = re.findall(r"\w+", normalize(question).lower())
+    return list(dict.fromkeys(w for w in words if w not in STOP and len(w) > 1))[:24]
+
+
+def excerpts(
+    question: str, sources: list[dict[str, Any]], limit: int = 3, max_chars: int = 420
+) -> list[dict[str, Any]]:
+    """Verbatim sentences that contain the most question terms, best-ranked source first."""
+    terms = _terms(question)
+    scored = []
+    for rank, source in enumerate(sources):
+        for sentence in SENTENCE_BREAK.split(compact(source["text"])):
+            words = set(re.findall(r"\w+", normalize(sentence).lower()))
+            hits = sum(term in words for term in terms)
+            if hits and len(sentence) >= 20:
+                scored.append((hits, rank, sentence, source))
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    chosen: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for hits, _, sentence, source in scored:
+        if sentence.lower() in seen:
+            continue
+        seen.add(sentence.lower())
+        quote = sentence if len(sentence) <= max_chars else sentence[:max_chars].rsplit(" ", 1)[0]
+        chosen.append(
+            {
+                "source_id": source["id"],
+                "title": source.get("title", ""),
+                "page": source.get("page"),
+                "source_ref": source.get("source_ref", ""),
+                "quote": quote,
+                "truncated": quote != sentence,
+                "matched_terms": hits,
+            }
+        )
+        if len(chosen) >= limit:
+            break
+    return chosen
+
+
+def quick_answer(question: str, sources: list[dict[str, Any]]) -> dict[str, Any]:
+    """Instant, model-free answer: retrieval plus verbatim sentence selection."""
+    if not sources:
+        return {
+            "mode": "no_evidence",
+            "claims": [],
+            "excerpts": [],
+            "sources": [],
+            "message": "Belum ada sumber yang cocok dalam dokumen terindeks.",
+        }
+    return {
+        "mode": "extractive",
+        "claims": [],
+        "excerpts": excerpts(question, sources),
+        "sources": sources,
+        "message": QUICK_MESSAGE,
+    }
+
+
 def answer(question: str, sources: list[dict[str, Any]]) -> dict[str, Any]:
     if not sources:
         return {
             "mode": "no_evidence",
             "claims": [],
+            "excerpts": [],
             "sources": [],
             "message": "Belum ada sumber yang cocok dalam dokumen terindeks.",
         }
@@ -119,6 +188,7 @@ def answer(question: str, sources: list[dict[str, Any]]) -> dict[str, Any]:
             return {
                 "mode": "no_supported_answer",
                 "claims": [],
+                "excerpts": excerpts(question, sources),
                 "sources": sources,
                 "message": "Jawaban belum didukung kutipan valid. Tinjau sumber berikut.",
             }
@@ -133,6 +203,7 @@ def answer(question: str, sources: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "mode": "retrieval_only",
             "claims": [],
+            "excerpts": excerpts(question, sources),
             "sources": sources,
             "message": "Model belum siap. Berikut kutipan sumber, bukan jawaban AI.",
         }
